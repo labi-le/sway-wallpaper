@@ -9,7 +9,7 @@ import (
 
 func GetImage(phrase string, resolution string) ([]byte, error) {
 	client := http.Client{}
-	get, err := client.Get(
+	get, err := client.Get( //nolint:noctx //dn
 		fmt.Sprintf("https://source.unsplash.com/%s/?%s",
 			resolution,
 			url.QueryEscape(phrase),

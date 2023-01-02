@@ -6,27 +6,30 @@ import (
 	"github.com/labi-le/google-history-wallpaper/pkg/browser/chromium"
 	"github.com/labi-le/google-history-wallpaper/pkg/image/unsplash"
 	"github.com/labi-le/google-history-wallpaper/pkg/tools"
+	_ "modernc.org/sqlite"
 	"os"
 	"os/user"
-)
-
-var (
-	browsers       = []string{"vivaldi", "chrome", "chromium", "opera", "brave"}
-	wallpaperTools = []string{"swaybg", "wbg"}
-	wallpaperAPI   = []string{"unsplash"}
-)
-
-var (
-	browser      string
-	resolution   string
-	wpTool       string
-	wpAPI        string
-	saveImageDir string
-
-	searchPhrase string
+	"time"
 )
 
 func main() {
+	var (
+		browsers       = []string{"vivaldi", "chrome", "chromium", "opera", "brave"}
+		wallpaperTools = []string{"swaybg", "wbg"}
+		wallpaperAPI   = []string{"unsplash"}
+
+		browser      string
+		resolution   string
+		wpTool       string
+		wpAPI        string
+		saveImageDir string
+
+		searchPhrase string
+
+		follow         string
+		followDuration time.Duration
+	)
+
 	usr, usErr := user.Current()
 	if usErr != nil {
 		Error(usErr)
@@ -38,21 +41,50 @@ func main() {
 	flag.StringVar(&wpAPI, "wp-api", wallpaperAPI[0], "wallpaper api to use. Available: "+fmt.Sprint(wallpaperAPI))
 	flag.StringVar(&saveImageDir, "save-image-dir", usr.HomeDir+"/Pictures", "directory to save image to")
 	flag.StringVar(&searchPhrase, "search-phrase", "", "search phrase to use")
+	flag.StringVar(&follow, "follow", "", "follow a time interval and update wallpaper. e.g. 1h, 1m, 30s")
 
 	flag.Parse()
 
-	if checkAvailable(browser, browsers) == false {
+	if !checkAvailable(browser, browsers) {
 		Error("Invalid browser")
 	}
 
-	if checkAvailable(wpTool, wallpaperTools) == false {
+	if !checkAvailable(wpTool, wallpaperTools) {
 		Error("Invalid wallpaper tool")
 	}
 
-	if checkAvailable(wpAPI, wallpaperAPI) == false {
+	if !checkAvailable(wpAPI, wallpaperAPI) {
 		Error("Invalid wallpaper api")
 	}
 
+	if follow != "" {
+		var parseErr error
+		followDuration, parseErr = parseFollow(follow)
+		if parseErr != nil {
+			Error("Invalid follow. e.g. 1h, 1m, 1s")
+		}
+	}
+
+	for {
+		if followDuration == 0 {
+			tick(usr, wpAPI, wpTool, browser, saveImageDir, resolution, searchPhrase)
+			break
+		}
+
+		tick(usr, wpAPI, wpTool, browser, saveImageDir, resolution, searchPhrase)
+		time.Sleep(followDuration)
+	}
+}
+
+func tick(
+	usr *user.User,
+	wpAPI,
+	wpTool,
+	browser,
+	saveImageDir,
+	resolution,
+	searchPhrase string,
+) {
 	if searchPhrase == "" {
 		var searchPhErr error
 		searchPhrase, searchPhErr = SearchedPhraseBrowser(usr, browser)
@@ -63,7 +95,7 @@ func main() {
 
 	Info("Search phrase: " + searchPhrase)
 
-	image, searchErr := GetImage(searchPhrase, wpAPI)
+	image, searchErr := GetImage(searchPhrase, wpAPI, resolution)
 	if searchErr != nil {
 		Error("Error while getting image: " + searchErr.Error())
 	}
@@ -80,18 +112,23 @@ func main() {
 	}
 }
 
+func parseFollow(f string) (time.Duration, error) {
+	return time.ParseDuration(f)
+}
+
 func Error(v any) {
-	fmt.Println(v)
+	//nolint:forbidigo //dn
+	fmt.Printf("%v\n", v)
 	os.Exit(1)
 }
 
 func Info(v any) {
-	fmt.Println(v)
+	//nolint:forbidigo //dn
+	fmt.Printf("%v\n", v)
 }
 
-func GetImage(phrase string, service string) ([]byte, error) {
-	switch service {
-	case "unsplash":
+func GetImage(phrase, service, resolution string) ([]byte, error) {
+	if service == "unsplash" {
 		return unsplash.GetImage(phrase, resolution)
 	}
 

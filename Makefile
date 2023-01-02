@@ -1,4 +1,4 @@
-PROJ_NAME = ghw
+PROJ_NAME = hw
 
 MAIN_PATH = *.go
 BUILD_PATH = build/package/

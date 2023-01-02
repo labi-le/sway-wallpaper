@@ -1,11 +1,15 @@
-# google-history-wallpaper
+# history-wallpaper
 
-"Google History Wallpaper" - a project that uses search queries from your Google browser history to find and set images as your wallpaper. Automatically update your desktop background with relevance to your interests.
-
+"History Wallpaper" - a project that uses search queries from your browser history to find and set images
+as your wallpaper. Automatically update your desktop background with relevance to your interests.
 
 ## Dependencies
 
+- Wayland
 - Chromium-based browser
+- Utils swaybg\wbg
+- Internet connection
+- Go (for building)
 
 ## Install
 
@@ -16,16 +20,17 @@ make install
 ## Usage
 
 ```
-ghw -wp-tool wbg
-
+hw
 ```
 
 ## Examples of usage
 
 ```
-Usage of ghw:
+Usage of hw:
   -browser string
         browser to use. Available: [vivaldi chrome chromium opera brave] (default "vivaldi")
+  -follow string
+        follow a time interval and update wallpaper. e.g. 1h, 1m, 30s
   -resolution string
         resolution to use. e.g. 1920x1080 (default "1920x1080")
   -save-image-dir string
@@ -36,12 +41,35 @@ Usage of ghw:
         wallpaper api to use. Available: [unsplash] (default "unsplash")
   -wp-tool string
         wallpaper tool to use. Available: [swaybg wbg] (default "swaybg")
+```
 
+Update your wallpaper every hour with wbg manager:
+
+```
+hw -wp-tool wbg -follow 1h
+```
+
+Update your wallpaper every 30 seconds with swaybg manager:
+
+```
+hw -follow 30m
+```
+
+Use ghw as dynamic wallpaper:
+
+```
+hw -follow 1h -search-phrase space
+```
+
+Add sway autostart:
+
+```
+exec hw [options]
 ```
 
 ## TODO (maybe never)
 
-- [x] Add swaybd tool
+- [x] Add swaybg tool
 - [x] Add wbg tool
 - [x] Unsplash image provider
 - [x] Chromium based browser support

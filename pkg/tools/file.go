@@ -23,5 +23,5 @@ func SaveFile(image []byte, dir string) (string, error) {
 	short := fmt.Sprintf("%x", sha.Sum(nil))[:7]
 
 	gen := fmt.Sprintf("%s/ghw-%s%s", dir, short, ext)
-	return gen, os.WriteFile(gen, image, 0644)
+	return gen, os.WriteFile(gen, image, 0600)
 }

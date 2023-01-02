@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	_ "modernc.org/sqlite"
 	"net/url"
 	"os"
 	"os/user"
