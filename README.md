@@ -6,7 +6,7 @@ as your wallpaper. Automatically update your desktop background with relevance t
 ## Dependencies
 
 - Wayland
-- Chromium-based browser
+- Chromium\Firefox-based browser
 - Utils swaybg\wbg
 - Internet connection
 - Go (for building)
@@ -28,9 +28,12 @@ hw
 ```
 Usage of hw:
   -browser string
-        browser to use. Available: [vivaldi chrome chromium opera brave] (default "vivaldi")
+        browser to use. Available: [vivaldi chrome chromium brave opera firefox] (default "vivaldi")
   -follow string
         follow a time interval and update wallpaper. e.g. 1h, 1m, 30s
+  -history-file string
+        browser history file to use. Auto detect if empty (only for chromium based browsers)
+        e.g ~/.mozilla/icecat/gxda4hpz.default-1672760493248/formhistory.sqlite
   -resolution string
         resolution to use. e.g. 1920x1080 (default "1920x1080")
   -save-image-dir string
@@ -49,7 +52,7 @@ Update your wallpaper every hour with wbg manager:
 hw -wp-tool wbg -follow 1h
 ```
 
-Update your wallpaper every 30 seconds with swaybg manager:
+Update your wallpaper every 30 minute with swaybg manager:
 
 ```
 hw -follow 30m
@@ -59,6 +62,16 @@ Use ghw as dynamic wallpaper:
 
 ```
 hw -follow 1h -search-phrase space
+```
+
+Direct path to browser history file (firefox-based)
+```
+hw -browser firefox -history-file ~/.mozilla/icecat/gxda4hpz.default-1672760493248/formhistory.sqlite
+```
+
+Direct path to browser history file (chromium-based)
+```
+hw -browser vivaldi -history-file ~/.config/vivaldi/Default/History
 ```
 
 Add sway autostart:
@@ -73,7 +86,7 @@ exec hw [options]
 - [x] Add wbg tool
 - [x] Unsplash image provider
 - [x] Chromium based browser support
-- [ ] Firefox support
+- [x] Firefox support
 - [ ] Resolution auto detection
 - [ ] Google image provider without API key
 - [ ] Pinterest?

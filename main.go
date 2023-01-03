@@ -1,9 +1,12 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/labi-le/google-history-wallpaper/pkg/browser/chromium"
+	"github.com/labi-le/google-history-wallpaper/pkg/browser/firefox"
 	"github.com/labi-le/google-history-wallpaper/pkg/image/unsplash"
 	"github.com/labi-le/google-history-wallpaper/pkg/tools"
 	_ "modernc.org/sqlite"
@@ -12,13 +15,20 @@ import (
 	"time"
 )
 
+var (
+	chromiumBasedBrowsers = []string{"vivaldi", "chrome", "chromium", "brave", "opera"}
+	firefoxBasedBrowsers  = []string{"firefox"}
+
+	browsers = append(chromiumBasedBrowsers, firefoxBasedBrowsers...)
+
+	wallpaperTools = []string{"swaybg", "wbg"}
+	wallpaperAPI   = []string{"unsplash"}
+)
+
 func main() {
 	var (
-		browsers       = []string{"vivaldi", "chrome", "chromium", "opera", "brave"}
-		wallpaperTools = []string{"swaybg", "wbg"}
-		wallpaperAPI   = []string{"unsplash"}
-
 		browser      string
+		historyFile  string
 		resolution   string
 		wpTool       string
 		wpAPI        string
@@ -36,6 +46,10 @@ func main() {
 	}
 
 	flag.StringVar(&browser, "browser", browsers[0], "browser to use. Available: "+fmt.Sprint(browsers))
+	flag.StringVar(&historyFile, "history-file", "",
+		"browser history file to use. Auto detect if empty (only for chromium based browsers)\n"+
+			"e.g ~/.mozilla/icecat/gxda4hpz.default-1672760493248/formhistory.sqlite",
+	)
 	flag.StringVar(&resolution, "resolution", "1920x1080", "resolution to use. e.g. 1920x1080")
 	flag.StringVar(&wpTool, "wp-tool", wallpaperTools[0], "wallpaper tool to use. Available: "+fmt.Sprint(wallpaperTools))
 	flag.StringVar(&wpAPI, "wp-api", wallpaperAPI[0], "wallpaper api to use. Available: "+fmt.Sprint(wallpaperAPI))
@@ -67,27 +81,22 @@ func main() {
 
 	for {
 		if followDuration == 0 {
-			tick(usr, wpAPI, wpTool, browser, saveImageDir, resolution, searchPhrase)
+			tick(usr, wpAPI, wpTool, browser, historyFile, saveImageDir, resolution, searchPhrase)
 			break
 		}
 
-		tick(usr, wpAPI, wpTool, browser, saveImageDir, resolution, searchPhrase)
+		tick(usr, wpAPI, wpTool, browser, historyFile, saveImageDir, resolution, searchPhrase)
 		time.Sleep(followDuration)
 	}
 }
 
-func tick(
-	usr *user.User,
-	wpAPI,
-	wpTool,
-	browser,
-	saveImageDir,
-	resolution,
-	searchPhrase string,
-) {
+func tick(usr *user.User, wpAPI, wpTool, browser, historyFile, saveImageDir, resolution, searchPhrase string) {
 	if searchPhrase == "" {
 		var searchPhErr error
-		searchPhrase, searchPhErr = SearchedPhraseBrowser(usr, browser)
+		searchPhrase, searchPhErr = SearchedPhraseBrowser(usr, browser, historyFile)
+		if errors.Is(searchPhErr, sql.ErrNoRows) {
+			searchPhErr = errors.New("browser history is empty")
+		}
 		if searchPhErr != nil {
 			Error("Error while getting searched phrase: " + searchPhErr.Error())
 		}
@@ -135,9 +144,12 @@ func GetImage(phrase, service, resolution string) ([]byte, error) {
 	return nil, nil
 }
 
-func SearchedPhraseBrowser(usr *user.User, browser string) (string, error) {
-	// need firefox?
-	return chromium.GetLastSearchedPhrase(usr, browser)
+func SearchedPhraseBrowser(usr *user.User, browser string, file string) (string, error) {
+	if isChromiumBased(browser) {
+		return chromium.GetLastSearchedPhrase(usr, browser, file)
+	}
+
+	return firefox.GetLastSearchedPhrase(file)
 }
 
 func SetWallpaper(path string, tool string) error {
@@ -154,6 +166,16 @@ func SetWallpaper(path string, tool string) error {
 func checkAvailable(concrete string, available []string) bool {
 	for _, item := range available {
 		if concrete == item {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isChromiumBased(browser string) bool {
+	for _, b := range chromiumBasedBrowsers {
+		if browser == b {
 			return true
 		}
 	}

@@ -9,10 +9,12 @@ import (
 	"os/user"
 )
 
-func GetLastSearchedPhrase(u *user.User, browser string) (string, error) {
-	browserDir := fmt.Sprintf("%s/.config/%s/Default/History", u.HomeDir, browser)
+func GetLastSearchedPhrase(u *user.User, browser string, file string) (string, error) {
+	if file == "" {
+		file = fmt.Sprintf("%s/.config/%s/Default/History", u.HomeDir, browser)
+	}
 
-	open, osErr := os.Open(browserDir)
+	open, osErr := os.Open(file)
 	if osErr != nil {
 		return "", osErr
 	}
@@ -38,11 +40,13 @@ func GetLastSearchedPhrase(u *user.User, browser string) (string, error) {
 
 	defer db.Close()
 
+	// It is also possible to search in the keyword_search_terms table,
+	// but the last query will not contain the search phrase,
+	// because repeated search queries are not displayed as the latest in search history
 	rows := db.QueryRow(`
 		SELECT url
 FROM urls
 WHERE url LIKE 'https://www.google.com/search?%'
-  AND last_visit_time > strftime('%s', 'now', '-1 hours') * 1000000 + 11644473600
 ORDER BY last_visit_time DESC
 LIMIT 1;
 
