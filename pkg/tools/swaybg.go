@@ -1,11 +1,11 @@
 package tools
 
-import "os/exec"
+import (
+	"golang.org/x/net/context"
+	"os/exec"
+)
 
-func SetWallpaperSwayBG(path string) error {
-	_ = exec.Command("killall", "swaybg").Run()
-	// since this process does not end, we ignore it
-	_ = exec.Command("swaybg", "-i", path).Start()
-
-	return nil
+func SetWallpaperSwayBG(ctx context.Context, path string) error {
+	cmd := exec.CommandContext(ctx, "swaybg", "-i", path)
+	return cmd.Start()
 }

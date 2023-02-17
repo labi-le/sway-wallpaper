@@ -9,23 +9,26 @@ import (
 	"github.com/labi-le/google-history-wallpaper/pkg/browser/firefox"
 	"github.com/labi-le/google-history-wallpaper/pkg/image/unsplash"
 	"github.com/labi-le/google-history-wallpaper/pkg/tools"
+	"github.com/labi-le/google-history-wallpaper/pkg/wallpaper"
+	"github.com/nightlyone/lockfile"
+	"golang.org/x/net/context"
 	_ "modernc.org/sqlite"
 	"os"
+	"os/signal"
 	"os/user"
+	"path/filepath"
 	"time"
 )
 
 var (
-	chromiumBasedBrowsers = []string{"vivaldi", "chrome", "chromium", "brave", "opera"}
-	firefoxBasedBrowsers  = []string{"firefox"}
-
-	browsers = append(chromiumBasedBrowsers, firefoxBasedBrowsers...)
-
 	wallpaperTools = []string{"swaybg", "wbg"}
 	wallpaperAPI   = []string{"unsplash"}
 )
 
 func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
 	var (
 		browser      string
 		historyFile  string
@@ -45,7 +48,12 @@ func main() {
 		Error(usErr)
 	}
 
-	flag.StringVar(&browser, "browser", browsers[0], "browser to use. Available: "+fmt.Sprint(browsers))
+	flag.StringVar(
+		&browser,
+		"browser",
+		tools.GetAllBrowsers()[0],
+		"browser to use. Available: "+fmt.Sprint(tools.GetAllBrowsers()),
+	)
 	flag.StringVar(&historyFile, "history-file", "",
 		"browser history file to use. Auto detect if empty (only for chromium based browsers)\n"+
 			"e.g ~/.mozilla/icecat/gxda4hpz.default-1672760493248/formhistory.sqlite",
@@ -59,7 +67,10 @@ func main() {
 
 	flag.Parse()
 
-	if !checkAvailable(browser, browsers) {
+	lock := MustLock()
+	defer Unlock(lock)
+
+	if !checkAvailable(browser, tools.GetAllBrowsers()) {
 		Error("Invalid browser")
 	}
 
@@ -79,21 +90,47 @@ func main() {
 		}
 	}
 
+	opt := wallpaper.Options{
+		WallpaperAPI:      wpAPI,
+		WallpaperSetter:   wpTool,
+		Browser:           browser,
+		HistoryFile:       historyFile,
+		SaveWallpaperPath: saveImageDir,
+		Resolution:        resolution,
+		SearchPhrase:      searchPhrase,
+	}
+
 	for {
 		if followDuration == 0 {
-			tick(usr, wpAPI, wpTool, browser, historyFile, saveImageDir, resolution, searchPhrase)
+			tick(ctx, usr, opt)
 			break
 		}
 
-		tick(usr, wpAPI, wpTool, browser, historyFile, saveImageDir, resolution, searchPhrase)
+		tick(ctx, usr, opt)
 		time.Sleep(followDuration)
 	}
 }
 
-func tick(usr *user.User, wpAPI, wpTool, browser, historyFile, saveImageDir, resolution, searchPhrase string) {
-	if searchPhrase == "" {
+func MustLock() lockfile.Lockfile {
+	lock, _ := lockfile.New(filepath.Join(os.TempDir(), "hw.lck"))
+
+	if lockErr := lock.TryLock(); lockErr != nil {
+		Error(fmt.Errorf("cannot unlock %q, reason: %w", lock, lockErr))
+	}
+
+	return lock
+}
+
+func Unlock(lock lockfile.Lockfile) {
+	if err := lock.Unlock(); err != nil {
+		Error(fmt.Errorf("cannot unlock %q, reason: %w", lock, err))
+	}
+}
+
+func tick(ctx context.Context, usr *user.User, opt wallpaper.Options) {
+	if opt.SearchPhrase == "" {
 		var searchPhErr error
-		searchPhrase, searchPhErr = SearchedPhraseBrowser(usr, browser, historyFile)
+		opt.SearchPhrase, searchPhErr = SearchedPhraseBrowser(usr, opt.Browser, opt.HistoryFile)
 		if errors.Is(searchPhErr, sql.ErrNoRows) {
 			searchPhErr = errors.New("browser history is empty")
 		}
@@ -102,23 +139,25 @@ func tick(usr *user.User, wpAPI, wpTool, browser, historyFile, saveImageDir, res
 		}
 	}
 
-	Info("Search phrase: " + searchPhrase)
+	Info("Search phrase: " + opt.SearchPhrase)
 
-	image, searchErr := GetImage(searchPhrase, wpAPI, resolution)
+	image, searchErr := GetImage(opt.SearchPhrase, opt.WallpaperAPI, opt.Resolution)
 	if searchErr != nil {
 		Error("Error while getting image: " + searchErr.Error())
 	}
 
-	path, saveErr := tools.SaveFile(image, saveImageDir)
+	path, saveErr := tools.SaveFile(image, opt.SaveWallpaperPath)
 	if saveErr != nil {
 		Error("Error while saving image: " + saveErr.Error())
 	}
 
 	Info("Saved image to: " + path)
 
-	if err := SetWallpaper(path, wpTool); err != nil {
+	if err := SetWallpaper(ctx, path, opt.WallpaperSetter); err != nil {
 		Error("Error while setting wallpaper: " + err.Error())
 	}
+
+	<-ctx.Done()
 }
 
 func parseFollow(f string) (time.Duration, error) {
@@ -145,19 +184,19 @@ func GetImage(phrase, service, resolution string) ([]byte, error) {
 }
 
 func SearchedPhraseBrowser(usr *user.User, browser string, file string) (string, error) {
-	if isChromiumBased(browser) {
+	if tools.IsChromiumBased(browser) {
 		return chromium.GetLastSearchedPhrase(usr, browser, file)
 	}
 
 	return firefox.GetLastSearchedPhrase(file)
 }
 
-func SetWallpaper(path string, tool string) error {
+func SetWallpaper(ctx context.Context, path string, tool string) error {
 	switch tool {
 	case "swaybg":
-		return tools.SetWallpaperSwayBG(path)
+		return tools.SetWallpaperSwayBG(ctx, path)
 	case "wbg":
-		return tools.SetWallpaperWBG(path)
+		return tools.SetWallpaperWBG(ctx, path)
 	}
 
 	return nil
@@ -166,16 +205,6 @@ func SetWallpaper(path string, tool string) error {
 func checkAvailable(concrete string, available []string) bool {
 	for _, item := range available {
 		if concrete == item {
-			return true
-		}
-	}
-
-	return false
-}
-
-func isChromiumBased(browser string) bool {
-	for _, b := range chromiumBasedBrowsers {
-		if browser == b {
 			return true
 		}
 	}
