@@ -106,8 +106,12 @@ func main() {
 			break
 		}
 
-		tick(ctx, usr, opt)
-		time.Sleep(followDuration)
+		reuse, currentCancel := context.WithTimeout(ctx, followDuration)
+
+		tick(reuse, usr, opt)
+
+		<-reuse.Done()
+		currentCancel()
 	}
 }
 
@@ -156,8 +160,6 @@ func tick(ctx context.Context, usr *user.User, opt wallpaper.Options) {
 	if err := SetWallpaper(ctx, path, opt.WallpaperSetter); err != nil {
 		Error("Error while setting wallpaper: " + err.Error())
 	}
-
-	<-ctx.Done()
 }
 
 func parseFollow(f string) (time.Duration, error) {
