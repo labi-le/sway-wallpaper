@@ -1,16 +1,22 @@
-package tools
+package fs
 
 import (
 	"crypto/sha256"
 	"fmt"
 	"github.com/gabriel-vasile/mimetype"
+	"io"
 	"os"
 )
 
 var ErrUnknownExtension = fmt.Errorf("unknown extension")
 
-func SaveFile(image []byte, dir string) (string, error) {
-	ext := mimetype.Detect(image).Extension()
+func SaveFile(readCloser io.ReadCloser, dir string) (string, error) {
+	img, err := io.ReadAll(readCloser)
+	if err != nil {
+		return "", err
+	}
+
+	ext := mimetype.Detect(img).Extension()
 	if ext == "" {
 		return "", ErrUnknownExtension
 	}
@@ -20,10 +26,10 @@ func SaveFile(image []byte, dir string) (string, error) {
 	}
 
 	sha := sha256.New()
-	sha.Write(image)
+	sha.Write(img)
 	// first 7 characters
 	short := fmt.Sprintf("%x", sha.Sum(nil))[:7]
 
 	gen := fmt.Sprintf("%s/hw-%s%s", dir, short, ext)
-	return gen, os.WriteFile(gen, image, 0600)
+	return gen, os.WriteFile(gen, img, 0600)
 }

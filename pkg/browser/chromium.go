@@ -1,39 +1,24 @@
-package chromium
+package browser
 
 import (
 	"database/sql"
-	"fmt"
-	"io"
+	"errors"
 	"net/url"
 	"os"
-	"os/user"
 )
 
-func GetLastSearchedPhrase(u *user.User, browser string, file string) (string, error) {
-	if file == "" {
-		file = fmt.Sprintf("%s/.config/%s/Default/History", u.HomeDir, browser)
-	}
+type Chromium struct {
+	Name        string
+	HistoryFile *os.File
+}
 
-	open, osErr := os.Open(file)
-	if osErr != nil {
-		return "", osErr
-	}
+func (b *Chromium) LastSearchedPhrase() (string, error) {
+	defer func() {
+		b.HistoryFile.Close()
+		os.Remove(b.HistoryFile.Name())
+	}()
 
-	defer open.Close()
-
-	temp, tempErr := os.CreateTemp("", "history")
-	if tempErr != nil {
-		return "", tempErr
-	}
-
-	defer temp.Close()
-	defer os.Remove(temp.Name())
-
-	if _, ioErr := io.Copy(temp, open); ioErr != nil {
-		return "", ioErr
-	}
-
-	db, sqlErr := sql.Open("sqlite", temp.Name())
+	db, sqlErr := sql.Open("sqlite", b.HistoryFile.Name())
 	if sqlErr != nil {
 		return "", sqlErr
 	}
@@ -53,6 +38,9 @@ LIMIT 1;
 `)
 	var lastURL string
 	if err := rows.Scan(&lastURL); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = ErrHistoryIsEmpty
+		}
 		return "", err
 	}
 
