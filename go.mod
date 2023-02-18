@@ -1,4 +1,4 @@
-module github.com/labi-le/google-history-wallpaper
+module github.com/labi-le/history-wallpaper
 
 go 1.19
 
