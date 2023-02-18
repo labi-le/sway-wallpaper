@@ -1,9 +1,12 @@
 PROJ_NAME = hw
 
-MAIN_PATH = *.go
+MAIN_PATH = cmd/main.go
 BUILD_PATH = build/package/
 
 INSTALL_PATH = /usr/bin/
+
+run:
+	go run $(MAIN_PATH)
 
 build: clean
 	go build --ldflags '-extldflags "-static"' -v -o $(BUILD_PATH)$(PROJ_NAME) $(MAIN_PATH)
