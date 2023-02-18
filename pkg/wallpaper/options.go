@@ -1,5 +1,11 @@
 package wallpaper
 
 type Options struct {
-	WallpaperAPI, WallpaperSetter, Browser, HistoryFile, SaveWallpaperPath, Resolution, SearchPhrase string
+	WallpaperAPI,
+	WallpaperSetter,
+	Browser,
+	HistoryFile,
+	SaveWallpaperPath,
+	Resolution,
+	SearchPhrase string
 }
