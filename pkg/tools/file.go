@@ -7,10 +7,12 @@ import (
 	"os"
 )
 
+var ErrUnknownExtension = fmt.Errorf("unknown extension")
+
 func SaveFile(image []byte, dir string) (string, error) {
 	ext := mimetype.Detect(image).Extension()
 	if ext == "" {
-		return "", fmt.Errorf("unknown extension")
+		return "", ErrUnknownExtension
 	}
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
