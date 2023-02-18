@@ -3,32 +3,22 @@ package browser
 import (
 	"database/sql"
 	"errors"
+	"github.com/bearatol/lg"
 	"net/url"
-	"os"
 )
 
 type Chromium struct {
-	Name        string
-	HistoryFile *os.File
+	Name    string
+	History *History
 }
 
 func (b *Chromium) LastSearchedPhrase() (string, error) {
-	defer func() {
-		b.HistoryFile.Close()
-		os.Remove(b.HistoryFile.Name())
-	}()
-
-	db, sqlErr := sql.Open("sqlite", b.HistoryFile.Name())
-	if sqlErr != nil {
-		return "", sqlErr
-	}
-
-	defer db.Close()
+	defer b.History.Cleanup()
 
 	// It is also possible to search in the keyword_search_terms table,
 	// but the last query will not contain the search phrase,
 	// because repeated search queries are not displayed as the latest in search history
-	rows := db.QueryRow(`
+	rows := b.History.DB.QueryRow(`
 		SELECT url
 FROM urls
 WHERE url LIKE 'https://www.google.com/search?%'
@@ -50,6 +40,6 @@ LIMIT 1;
 	}
 
 	phrase := ur.Query().Get("q")
-
+	lg.Infof("Last searched phrase: %s", phrase)
 	return phrase, nil
 }

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/bearatol/lg"
 	"github.com/labi-le/history-wallpaper/pkg/api"
 	"github.com/labi-le/history-wallpaper/pkg/browser"
-	"github.com/labi-le/history-wallpaper/pkg/fs"
 	"github.com/labi-le/history-wallpaper/pkg/wallpaper"
 	"github.com/labi-le/history-wallpaper/pkg/wptool"
 	"github.com/nightlyone/lockfile"
@@ -28,13 +28,16 @@ func main() {
 
 	usr, err := user.Current()
 	if err != nil {
-		Error(err)
+		lg.Error(err)
 	}
 
-	opt := Parse(browser.Available(), usr)
+	opt := Parse(api.Available(), wptool.Available(), browser.Available(), usr)
+	hw := wallpaper.MustHW(opt)
 
 	if opt.FollowDuration == 0 {
-		tick(ctx, opt)
+		if err := hw.Set(ctx); err != nil {
+			lg.Error(err)
+		}
 		<-ctx.Done()
 		return
 	}
@@ -42,14 +45,20 @@ func main() {
 	for {
 		reuse, currentCancel := context.WithTimeout(ctx, opt.FollowDuration)
 
-		tick(reuse, opt)
+		if err := hw.Set(reuse); err != nil {
+			if errors.Is(err, context.Canceled) {
+				lg.Warnf("Handling interrupt signal")
+				break
+			}
+			lg.Error(err)
+		}
 
 		<-reuse.Done()
 		currentCancel()
 	}
 }
 
-func Parse(availBrowsers []string, usr *user.User) wallpaper.HW {
+func Parse(apiAvail []string, wpToolAvail []string, availBrowsers []string, usr *user.User) wallpaper.Options {
 	var (
 		browserName  string
 		historyFile  string
@@ -76,9 +85,9 @@ func Parse(availBrowsers []string, usr *user.User) wallpaper.HW {
 	)
 	flag.StringVar(&resolution, "resolution", "1920x1080", "resolution to use. e.g. 1920x1080")
 	flag.StringVar(&wpTool,
-		"wp-tool", wptool.Available()[0], "wallpaper tool to use. Available: "+fmt.Sprint(wptool.Available()))
+		"wp-tool", wpToolAvail[0], "wallpaper tool to use. Available: "+fmt.Sprint(wpToolAvail))
 	flag.StringVar(&wpAPI,
-		"wp-api", api.Available()[0], "wallpaper api to use. Available: "+fmt.Sprint(api.Available()))
+		"wp-api", apiAvail[0], "wallpaper api to use. Available: "+fmt.Sprint(apiAvail))
 	flag.StringVar(&saveImageDir, "save-image-dir", usr.HomeDir+"/Pictures", "directory to save image to")
 	flag.StringVar(&searchPhrase, "search-phrase", "", "search phrase to use")
 	flag.StringVar(&follow, "follow", "", "follow a time interval and update wallpaper. e.g. 1h, 1m, 30s")
@@ -86,33 +95,35 @@ func Parse(availBrowsers []string, usr *user.User) wallpaper.HW {
 	flag.Parse()
 
 	if !checkAvailable(browserName, availBrowsers) {
-		Error("Invalid browserName")
+		lg.Error("Invalid browserName")
 	}
 
-	if !checkAvailable(wpTool, wptool.Available()) {
-		Error("Invalid wallpaper tool")
+	if !checkAvailable(wpTool, wpToolAvail) {
+		lg.Error("Invalid wallpaper tool")
 	}
 
-	if !checkAvailable(wpAPI, api.Available()) {
-		Error("Invalid wallpaper api")
+	if !checkAvailable(wpAPI, apiAvail) {
+		lg.Error("Invalid wallpaper api")
 	}
 
 	if follow != "" {
 		var parseErr error
 		followDuration, parseErr = time.ParseDuration(follow)
 		if parseErr != nil {
-			Error("Invalid follow. e.g. 1h, 1m, 1s")
+			lg.Error("Invalid follow. e.g. 1h, 1m, 1s")
 		}
 	}
 
-	return wallpaper.HW{
-		WallpaperAPI:      api.MustFinder(wpAPI),
-		WallpaperTool:     wptool.ParseTool(wpTool),
-		Browser:           browser.MustBrowser(browserName, usr, historyFile),
-		Resolution:        api.Resolution(resolution),
-		SaveWallpaperPath: saveImageDir,
+	return wallpaper.Options{
 		SearchPhrase:      searchPhrase,
+		SaveWallpaperPath: saveImageDir,
 		FollowDuration:    followDuration,
+		Resolution:        api.Resolution(resolution),
+		API:               wpAPI,
+		Tool:              wpTool,
+		HistoryFile:       historyFile,
+		Browser:           browserName,
+		Usr:               usr,
 	}
 }
 
@@ -122,9 +133,9 @@ func MustLock() lockfile.Lockfile {
 	if lockErr := lock.TryLock(); lockErr != nil {
 		owner, err := lock.GetOwner()
 		if err != nil {
-			Error(errors.New("cannot get locked process: " + lockErr.Error()))
+			lg.Error(errors.New("cannot get locked process: " + lockErr.Error()))
 		}
-		Error(fmt.Errorf("hw is already running. pid %d", owner.Pid))
+		lg.Error(fmt.Errorf("hw is already running. pid %d", owner.Pid))
 	}
 
 	return lock
@@ -132,53 +143,8 @@ func MustLock() lockfile.Lockfile {
 
 func Unlock(lock lockfile.Lockfile) {
 	if err := lock.Unlock(); err != nil {
-		Error(fmt.Errorf("cannot unlock %q, reason: %w", lock, err))
+		lg.Error(fmt.Errorf("cannot unlock %q, reason: %w", lock, err))
 	}
-}
-
-func tick(ctx context.Context, opt wallpaper.HW) {
-	if opt.SearchPhrase == "" {
-		var searchPhErr error
-		opt.SearchPhrase, searchPhErr = SearchedPhraseBrowser(opt.Browser)
-		if searchPhErr != nil && !errors.Is(searchPhErr, context.Canceled) {
-			Error("Error while getting searched phrase: " + searchPhErr.Error())
-		}
-	}
-
-	Info("Search phrase: " + opt.SearchPhrase)
-
-	img, searchErr := opt.WallpaperAPI.Find(ctx, opt.SearchPhrase, opt.Resolution)
-	if searchErr != nil {
-		Error("Error while getting img: " + searchErr.Error())
-	}
-
-	defer img.Close()
-
-	path, saveErr := fs.SaveFile(img, opt.SaveWallpaperPath)
-	if saveErr != nil {
-		Error("Error while saving img: " + saveErr.Error())
-	}
-
-	Info("Saved img to: " + path)
-
-	if err := opt.WallpaperTool.Set(ctx, path); err != nil && !errors.Is(err, context.Canceled) {
-		Error("Error while setting wallpaper: " + err.Error())
-	}
-}
-
-func Error(v any) {
-	//nolint:forbidigo //dn
-	fmt.Printf("%v\n", v)
-	os.Exit(1)
-}
-
-func Info(v any) {
-	//nolint:forbidigo //dn
-	fmt.Printf("%v\n", v)
-}
-
-func SearchedPhraseBrowser(b browser.PhraseFinder) (string, error) {
-	return b.LastSearchedPhrase()
 }
 
 func checkAvailable(concrete string, available []string) bool {

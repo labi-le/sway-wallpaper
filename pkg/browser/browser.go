@@ -1,8 +1,10 @@
 package browser
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/bearatol/lg"
 	"io"
 	"os"
 	"os/user"
@@ -38,18 +40,18 @@ func IsChromiumBased(browser string) bool {
 func MustBrowser(browserName string, usr *user.User, historyPath string) PhraseFinder {
 	if IsChromiumBased(browserName) {
 		return &Chromium{
-			Name:        browserName,
-			HistoryFile: findHistoryFile(browserName, usr, historyPath),
+			Name:    browserName,
+			History: openHistoryDB(browserName, usr, historyPath),
 		}
 	}
 
 	return &Firefox{
-		Name:        browserName,
-		HistoryFile: findHistoryFile(browserName, usr, historyPath),
+		Name:    browserName,
+		History: openHistoryDB(browserName, usr, historyPath),
 	}
 }
 
-func findHistoryFile(browserName string, u *user.User, fullPath string) *os.File {
+func openHistoryDB(browserName string, u *user.User, fullPath string) *History {
 	var path string
 
 	if IsChromiumBased(browserName) {
@@ -69,22 +71,32 @@ func findHistoryFile(browserName string, u *user.User, fullPath string) *os.File
 	return copyHistoryFile(path)
 }
 
-func copyHistoryFile(path string) *os.File {
-	open, osErr := os.Open(path)
+func copyHistoryFile(path string) *History {
+	lockedDB, osErr := os.Open(path)
 	if osErr != nil {
 		panic(osErr)
 	}
 
-	defer open.Close()
+	defer lockedDB.Close()
 
 	temp, tempErr := os.CreateTemp("", "history")
 	if tempErr != nil {
 		panic(tempErr)
 	}
 
-	if _, ioErr := io.Copy(temp, open); ioErr != nil {
+	written, ioErr := io.Copy(temp, lockedDB)
+	if ioErr != nil {
 		panic(ioErr)
 	}
+	lg.Infof("Copied %d bytes from %s to %s", written, path, temp.Name())
 
-	return temp
+	db, sqlErr := sql.Open("sqlite", temp.Name()+"?")
+	if sqlErr != nil {
+		panic(sqlErr)
+	}
+
+	return &History{
+		DB:      db,
+		TmpFile: temp,
+	}
 }

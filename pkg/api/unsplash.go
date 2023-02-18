@@ -15,7 +15,7 @@ func (u *Unsplash) Find(ctx context.Context, q string, r Resolution) (io.ReadClo
 	request, _ := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		fmt.Sprintf("https://source.unsplash.com/%s/?%s", q, r),
+		fmt.Sprintf("https://source.unsplash.com/%s/?%s", r, q),
 		nil,
 	)
 

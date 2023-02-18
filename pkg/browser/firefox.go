@@ -3,28 +3,17 @@ package browser
 import (
 	"database/sql"
 	"errors"
-	"os"
 )
 
 type Firefox struct {
-	Name        string
-	HistoryFile *os.File
+	Name    string
+	History *History
 }
 
 func (f *Firefox) LastSearchedPhrase() (string, error) {
-	defer func() {
-		f.HistoryFile.Close()
-		os.Remove(f.HistoryFile.Name())
-	}()
+	defer f.History.Cleanup()
 
-	db, sqlErr := sql.Open("sqlite", f.HistoryFile.Name())
-	if sqlErr != nil {
-		return "", sqlErr
-	}
-
-	defer db.Close()
-
-	rows := db.QueryRow(`
+	rows := f.History.DB.QueryRow(`
 		SELECT value
 FROM moz_formhistory
 WHERE fieldname = 'searchbar-history'
