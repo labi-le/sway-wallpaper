@@ -5,11 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/labi-le/google-history-wallpaper/pkg/browser/chromium"
-	"github.com/labi-le/google-history-wallpaper/pkg/browser/firefox"
-	"github.com/labi-le/google-history-wallpaper/pkg/image/unsplash"
-	"github.com/labi-le/google-history-wallpaper/pkg/tools"
-	"github.com/labi-le/google-history-wallpaper/pkg/wallpaper"
+	"github.com/labi-le/history-wallpaper/pkg/browser/chromium"
+	"github.com/labi-le/history-wallpaper/pkg/browser/firefox"
+	"github.com/labi-le/history-wallpaper/pkg/image/unsplash"
+	"github.com/labi-le/history-wallpaper/pkg/tools"
+	"github.com/labi-le/history-wallpaper/pkg/wallpaper"
 	"github.com/nightlyone/lockfile"
 	"golang.org/x/net/context"
 	_ "modernc.org/sqlite"
@@ -100,12 +100,13 @@ func main() {
 		SearchPhrase:      searchPhrase,
 	}
 
-	for {
-		if followDuration == 0 {
-			tick(ctx, usr, opt)
-			break
-		}
+	if followDuration == 0 {
+		tick(ctx, usr, opt)
+		<-ctx.Done()
+		return
+	}
 
+	for {
 		reuse, currentCancel := context.WithTimeout(ctx, followDuration)
 
 		tick(reuse, usr, opt)
@@ -119,7 +120,11 @@ func MustLock() lockfile.Lockfile {
 	lock, _ := lockfile.New(filepath.Join(os.TempDir(), "hw.lck"))
 
 	if lockErr := lock.TryLock(); lockErr != nil {
-		Error(fmt.Errorf("cannot unlock %q, reason: %w", lock, lockErr))
+		owner, err := lock.GetOwner()
+		if err != nil {
+			Error(errors.New("cannot get locked process: " + lockErr.Error()))
+		}
+		Error(fmt.Errorf("hw is already running. pid %d", owner.Pid))
 	}
 
 	return lock
@@ -138,7 +143,7 @@ func tick(ctx context.Context, usr *user.User, opt wallpaper.Options) {
 		if errors.Is(searchPhErr, sql.ErrNoRows) {
 			searchPhErr = errors.New("browser history is empty")
 		}
-		if searchPhErr != nil {
+		if searchPhErr != nil && !errors.Is(searchPhErr, context.Canceled) {
 			Error("Error while getting searched phrase: " + searchPhErr.Error())
 		}
 	}
@@ -157,7 +162,7 @@ func tick(ctx context.Context, usr *user.User, opt wallpaper.Options) {
 
 	Info("Saved image to: " + path)
 
-	if err := SetWallpaper(ctx, path, opt.WallpaperSetter); err != nil {
+	if err := SetWallpaper(ctx, path, opt.WallpaperSetter); err != nil && !errors.Is(err, context.Canceled) {
 		Error("Error while setting wallpaper: " + err.Error())
 	}
 }
