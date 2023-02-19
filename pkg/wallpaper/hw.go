@@ -41,7 +41,6 @@ func MustHW(opt Options) *HW {
 }
 
 func (hw *HW) Set(ctx context.Context) error {
-	log.Info("Setting wallpaper...")
 	if hw.Options.SearchPhrase == "" {
 		log.Info("Searching phrase not provided, trying to get last searched phrase from browser")
 		var searchPhErr error
@@ -51,7 +50,7 @@ func (hw *HW) Set(ctx context.Context) error {
 		}
 	}
 
-	log.Infof("Searching for %s", hw.Options.SearchPhrase)
+	log.Infof("Search for %s", hw.Options.SearchPhrase)
 	img, searchErr := hw.WallpaperAPI.Find(ctx, hw.Options.SearchPhrase, hw.Options.Resolution)
 	if searchErr != nil {
 		return searchErr
@@ -59,13 +58,13 @@ func (hw *HW) Set(ctx context.Context) error {
 
 	defer img.Close()
 
-	log.Infof("Saving wallpaper to %s", hw.Options.SaveWallpaperPath)
+	log.Infof("Save wallpaper to %s", hw.Options.SaveWallpaperPath)
 	path, saveErr := fs.SaveFile(img, hw.Options.SaveWallpaperPath)
 	if saveErr != nil {
 		return saveErr
 	}
 
-	log.Infof("Setting wallpaper to %s", path)
+	log.Infof("Set wallpaper from %s", path)
 	if err := hw.WallpaperTool.Set(ctx, path); err != nil && !errors.Is(err, context.Canceled) {
 		return err
 	}

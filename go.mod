@@ -7,6 +7,7 @@ require (
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/sirupsen/logrus v1.9.0
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e
+	github.com/vcraescu/go-xrandr v0.0.0-20201121120806-4e66d7925a73 // indirect
 	modernc.org/sqlite v1.20.1
 )
 

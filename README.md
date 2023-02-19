@@ -6,16 +6,20 @@ as your wallpaper. Automatically update your desktop background with relevance t
 ## Dependencies
 
 - Wayland
-- Chromium\Firefox-based browser
-- Utils swaybg\wbg
-- Internet connection
-- Go (for building)
+- Chromium\Firefox-based browser - for parse history file
+- Utilities for setting wallpaper -`swaybg`,`wbg`
+- `xrandr` - for resolution detection, non required if you specify resolution manually
+- Internet connection - for find and downloading images
+- Go - for building, non required if you use prebuilt binaries
 
-## Install
+## Compile from source
 
 ```sh
 make install
 ```
+
+## Prebuilt binaries
+https://github.com/labi-le/history-wallpaper/releases
 
 ## Usage
 
@@ -88,6 +92,6 @@ exec hw [options]
 - [x] Unsplash image provider
 - [x] Chromium based browser support
 - [x] Firefox support
-- [ ] Resolution auto detection
+- [x] Resolution auto detection
 - [ ] Google image provider without API key
 - [ ] Pinterest?

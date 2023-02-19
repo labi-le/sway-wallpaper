@@ -10,12 +10,15 @@ import (
 	"github.com/labi-le/history-wallpaper/pkg/wallpaper"
 	"github.com/labi-le/history-wallpaper/pkg/wptool"
 	"github.com/nightlyone/lockfile"
+	"github.com/vcraescu/go-xrandr"
 	"golang.org/x/net/context"
 	_ "modernc.org/sqlite"
 	"os"
+	"os/exec"
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"time"
 )
 
@@ -26,7 +29,9 @@ var (
 	ErrInvalidFollowDuration       = errors.New("invalid follow. e.g. 1h, 1m, 1s")
 	ErrHWAlreadyRunning            = errors.New("hw is already running. pid %d")
 	ErrCannotLock                  = errors.New("cannot get locked process: %s")
+	ErrInvalidResolution           = errors.New("invalid resolution. e.g. 1920x1080")
 	ErrCannotUnlock                = errors.New("cannot unlock process: %s")
+	ErrAutoResolutionNotSupported  = errors.New("xrandr not found. Please install xrandr or set resolution manually")
 )
 
 const LockFile = "hw.lck"
@@ -69,8 +74,8 @@ func main() {
 			log.Error(hwErr)
 		}
 
-		currentCancel()
 		<-reuse.Done()
+		currentCancel()
 	}
 }
 
@@ -99,7 +104,7 @@ func Parse(apiAvail []string, wpToolAvail []string, availBrowsers []string, usr 
 		"browserName history file to use. Auto detect if empty (only for chromium based browsers)\n"+
 			"e.g ~/.mozilla/icecat/gxda4hpz.default-1672760493248/formhistory.sqlite",
 	)
-	flag.StringVar(&resolution, "resolution", "1920x1080", "resolution to use. e.g. 1920x1080")
+	flag.StringVar(&resolution, "resolution", DetectResolution(), "resolution to use. e.g. 1920x1080")
 	flag.StringVar(&wpTool,
 		"wp-tool", wpToolAvail[0], "wallpaper tool to use. Available: "+fmt.Sprint(wpToolAvail))
 	flag.StringVar(&wpAPI,
@@ -122,6 +127,10 @@ func Parse(apiAvail []string, wpToolAvail []string, availBrowsers []string, usr 
 		log.Fatal(ErrWallpaperAPINotImplemented)
 	}
 
+	if !validateResolution(resolution) {
+		log.Fatal(ErrInvalidResolution)
+	}
+
 	if follow != "" {
 		var parseErr error
 		followDuration, parseErr = time.ParseDuration(follow)
@@ -141,6 +150,27 @@ func Parse(apiAvail []string, wpToolAvail []string, availBrowsers []string, usr 
 		Browser:           browserName,
 		Usr:               usr,
 	}
+}
+
+func validateResolution(resolution string) bool {
+	return regexp.MustCompile(`\d+x\d+`).MatchString(resolution)
+}
+
+func DetectResolution() string {
+	screens, err := xrandr.GetScreens()
+	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			log.Fatal(ErrAutoResolutionNotSupported)
+		}
+		log.Fatal(err)
+	}
+
+	screen := screens[0]
+
+	resolution := fmt.Sprintf("%.fx%.f", screen.CurrentResolution.Width, screen.CurrentResolution.Height)
+	log.Infof("Detected resolution: %s", resolution)
+
+	return resolution
 }
 
 func MustLock() lockfile.Lockfile {
