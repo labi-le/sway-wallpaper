@@ -12,7 +12,7 @@ build: clean
 	go build --ldflags '-extldflags "-static"' -v -o $(BUILD_PATH)$(PROJ_NAME) $(MAIN_PATH)
 
 release: clean
-	goreleaser --rm-dist
+	goreleaser release --clean
 
 install:
 	make build

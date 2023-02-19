@@ -8,16 +8,12 @@ before:
     - go generate ./...
 builds:
   - main: ./cmd/main.go
-  - ldflags: '-extldflags "-static"'
-  - env:
+    id: hw
+    ldflags: '-extldflags "-static"'
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
-archives:
-  - replacements:
-      linux: Linux
-      386: i386
-      amd64: x86_64
 checksum:
   name_template: 'checksums.txt'
 snapshot:
