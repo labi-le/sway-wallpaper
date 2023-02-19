@@ -3,10 +3,14 @@
 "History Wallpaper" - a project that uses search queries from your browser history to find and set images
 as your wallpaper. Automatically update your desktop background with relevance to your interests.
 
+## Working mode
+- Browser history search mode
+- Search by phrase mode (`search-phrase` option)
+
 ## Dependencies
 
 - Wayland
-- Chromium\Firefox-based browser - for parse history file
+- Chromium\Firefox-based browser - parsing history file, non required if use `search-phrase` option
 - Utilities for setting wallpaper -`swaybg`,`wbg`
 - `xrandr` - for resolution detection, non required if you specify resolution manually
 - Internet connection - for find and downloading images
