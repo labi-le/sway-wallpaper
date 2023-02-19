@@ -83,6 +83,7 @@ exec hw [options]
 ## TODO (maybe never)
 
 - [x] Add swaybg tool
+- [ ] Add logger
 - [x] Add wbg tool
 - [x] Unsplash image provider
 - [x] Chromium based browser support
