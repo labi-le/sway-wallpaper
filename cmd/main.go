@@ -4,9 +4,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/bearatol/lg"
 	"github.com/labi-le/history-wallpaper/pkg/api"
 	"github.com/labi-le/history-wallpaper/pkg/browser"
+	"github.com/labi-le/history-wallpaper/pkg/log"
 	"github.com/labi-le/history-wallpaper/pkg/wallpaper"
 	"github.com/labi-le/history-wallpaper/pkg/wptool"
 	"github.com/nightlyone/lockfile"
@@ -19,6 +19,18 @@ import (
 	"time"
 )
 
+var (
+	ErrBrowserNotImplemented       = errors.New("invalid browser not implemented")
+	ErrWallpaperToolNotImplemented = errors.New("invalid wallpaper tool not implemented")
+	ErrWallpaperAPINotImplemented  = errors.New("invalid wallpaper api not implemented")
+	ErrInvalidFollowDuration       = errors.New("invalid follow. e.g. 1h, 1m, 1s")
+	ErrHWAlreadyRunning            = errors.New("hw is already running. pid %d")
+	ErrCannotLock                  = errors.New("cannot get locked process: %s")
+	ErrCannotUnlock                = errors.New("cannot unlock process: %s")
+)
+
+const LockFile = "hw.lck"
+
 func main() {
 	lock := MustLock()
 	defer Unlock(lock)
@@ -28,15 +40,19 @@ func main() {
 
 	usr, err := user.Current()
 	if err != nil {
-		lg.Error(err)
+		log.Error(err)
 	}
 
 	opt := Parse(api.Available(), wptool.Available(), browser.Available(), usr)
 	hw := wallpaper.MustHW(opt)
 
 	if opt.FollowDuration == 0 {
-		if err := hw.Set(ctx); err != nil {
-			lg.Error(err)
+		if hwErr := hw.Set(ctx); hwErr != nil {
+			if errors.Is(err, context.Canceled) {
+				log.Warnf("Handling interrupt signal")
+				return
+			}
+			log.Error(hwErr)
 		}
 		<-ctx.Done()
 		return
@@ -45,16 +61,16 @@ func main() {
 	for {
 		reuse, currentCancel := context.WithTimeout(ctx, opt.FollowDuration)
 
-		if err := hw.Set(reuse); err != nil {
-			if errors.Is(err, context.Canceled) {
-				lg.Warnf("Handling interrupt signal")
+		if hwErr := hw.Set(reuse); hwErr != nil {
+			if errors.Is(hwErr, context.Canceled) {
+				log.Warnf("Handling interrupt signal")
 				break
 			}
-			lg.Error(err)
+			log.Error(hwErr)
 		}
 
-		<-reuse.Done()
 		currentCancel()
+		<-reuse.Done()
 	}
 }
 
@@ -95,22 +111,22 @@ func Parse(apiAvail []string, wpToolAvail []string, availBrowsers []string, usr 
 	flag.Parse()
 
 	if !checkAvailable(browserName, availBrowsers) {
-		lg.Error("Invalid browserName")
+		log.Fatal(ErrBrowserNotImplemented)
 	}
 
 	if !checkAvailable(wpTool, wpToolAvail) {
-		lg.Error("Invalid wallpaper tool")
+		log.Fatal(ErrWallpaperToolNotImplemented)
 	}
 
 	if !checkAvailable(wpAPI, apiAvail) {
-		lg.Error("Invalid wallpaper api")
+		log.Fatal(ErrWallpaperAPINotImplemented)
 	}
 
 	if follow != "" {
 		var parseErr error
 		followDuration, parseErr = time.ParseDuration(follow)
 		if parseErr != nil {
-			lg.Error("Invalid follow. e.g. 1h, 1m, 1s")
+			log.Fatal(ErrInvalidFollowDuration)
 		}
 	}
 
@@ -128,14 +144,14 @@ func Parse(apiAvail []string, wpToolAvail []string, availBrowsers []string, usr 
 }
 
 func MustLock() lockfile.Lockfile {
-	lock, _ := lockfile.New(filepath.Join(os.TempDir(), "hw.lck"))
+	lock, _ := lockfile.New(filepath.Join(os.TempDir(), LockFile))
 
 	if lockErr := lock.TryLock(); lockErr != nil {
 		owner, err := lock.GetOwner()
 		if err != nil {
-			lg.Error(errors.New("cannot get locked process: " + lockErr.Error()))
+			log.Fatalf(ErrCannotLock.Error(), err)
 		}
-		lg.Error(fmt.Errorf("hw is already running. pid %d", owner.Pid))
+		log.Fatalf(ErrHWAlreadyRunning.Error(), owner.Pid)
 	}
 
 	return lock
@@ -143,7 +159,7 @@ func MustLock() lockfile.Lockfile {
 
 func Unlock(lock lockfile.Lockfile) {
 	if err := lock.Unlock(); err != nil {
-		lg.Error(fmt.Errorf("cannot unlock %q, reason: %w", lock, err))
+		log.Fatalf(ErrCannotUnlock.Error(), err)
 	}
 }
 

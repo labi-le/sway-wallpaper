@@ -1,17 +1,59 @@
 package log
 
 import (
-	"fmt"
-	"os"
+	"github.com/sirupsen/logrus"
 )
 
-func Error(v any) {
-	//nolint:forbidigo //dn
-	fmt.Printf("%v\n", v)
-	os.Exit(1)
+var logger = MustLogger()
+
+func MustLogger() *logrus.Logger {
+	l := logrus.New()
+	l.SetFormatter(&logrus.TextFormatter{
+		DisableColors: false,
+		FullTimestamp: true,
+	})
+
+	l.SetReportCaller(false)
+
+	return l
 }
 
-func Info(v any) {
-	//nolint:forbidigo //dn
-	fmt.Printf("%v\n", v)
+func Fatal(args ...any) {
+	logger.Fatal(args...)
+}
+
+func Fatalf(format string, v ...any) {
+	logger.Fatalf(format, v...)
+}
+
+func Error(args ...any) {
+	logger.Error(args...)
+}
+
+func Errorf(format string, v ...any) {
+	logger.Errorf(format, v...)
+}
+
+func Info(args ...any) {
+	logger.Info(args...)
+}
+
+func Infof(format string, v ...any) {
+	logger.Infof(format, v...)
+}
+
+func Debug(args ...any) {
+	logger.Debug(args...)
+}
+
+func Debugf(format string, v ...any) {
+	logger.Debugf(format, v...)
+}
+
+func Warn(args ...any) {
+	logger.Warn(args...)
+}
+
+func Warnf(format string, v ...any) {
+	logger.Warnf(format, v...)
 }

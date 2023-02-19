@@ -21,8 +21,8 @@ func SaveFile(readCloser io.ReadCloser, dir string) (string, error) {
 		return "", ErrUnknownExtension
 	}
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", err
+	if ioErr := os.MkdirAll(dir, 0755); ioErr != nil {
+		return "", ioErr
 	}
 
 	sha := sha256.New()

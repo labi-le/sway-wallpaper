@@ -3,7 +3,7 @@ package browser
 import (
 	"database/sql"
 	"errors"
-	"github.com/bearatol/lg"
+	"github.com/labi-le/history-wallpaper/pkg/log"
 	"net/url"
 )
 
@@ -40,6 +40,6 @@ LIMIT 1;
 	}
 
 	phrase := ur.Query().Get("q")
-	lg.Infof("Last searched phrase: %s", phrase)
+	log.Infof("Last searched phrase: %s", phrase)
 	return phrase, nil
 }

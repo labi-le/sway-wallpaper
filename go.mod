@@ -5,12 +5,12 @@ go 1.19
 require (
 	github.com/gabriel-vasile/mimetype v1.4.1
 	github.com/nightlyone/lockfile v1.0.0
+	github.com/sirupsen/logrus v1.9.0
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e
 	modernc.org/sqlite v1.20.1
 )
 
 require (
-	github.com/bearatol/lg v1.2.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect

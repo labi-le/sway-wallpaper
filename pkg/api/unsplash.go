@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type Unsplash struct {
-	client http.Client
+	client *api
 }
 
 func (u *Unsplash) Find(ctx context.Context, q string, r Resolution) (io.ReadCloser, error) {
@@ -19,6 +20,7 @@ func (u *Unsplash) Find(ctx context.Context, q string, r Resolution) (io.ReadClo
 		nil,
 	)
 
+	time.Sleep(6 * time.Second)
 	resp, err := u.client.Do(request)
 	if err != nil {
 		return nil, err
