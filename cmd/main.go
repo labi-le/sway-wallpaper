@@ -115,7 +115,7 @@ func Parse(apiAvail []string, wpToolAvail []string, availBrowsers []string, usr 
 
 	flag.Parse()
 
-	if !checkAvailable(browserName, availBrowsers) {
+	if !checkAvailable(browserName, availBrowsers) && searchPhrase == "" {
 		log.Fatal(ErrBrowserNotImplemented)
 	}
 

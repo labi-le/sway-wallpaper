@@ -45,6 +45,10 @@ func MustBrowser(browserName string, usr *user.User, historyPath string) PhraseF
 		}
 	}
 
+	if browserName == Noop {
+		return NewNoop()
+	}
+
 	return &Firefox{
 		Name:    browserName,
 		History: openHistoryDB(browserName, usr, historyPath),

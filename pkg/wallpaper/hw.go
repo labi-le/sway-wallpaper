@@ -32,6 +32,9 @@ type Options struct {
 }
 
 func MustHW(opt Options) *HW {
+	if opt.SearchPhrase != "" {
+		opt.Browser = browser.Noop
+	}
 	return &HW{
 		WallpaperAPI:  api.MustFinder(opt.API),
 		WallpaperTool: wptool.ParseTool(opt.Tool),
