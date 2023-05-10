@@ -3,7 +3,7 @@ package browser
 import (
 	"database/sql"
 	"errors"
-	"github.com/labi-le/history-wallpaper/pkg/log"
+	"github.com/labi-le/sway-wallpaper/pkg/log"
 	"net/url"
 )
 

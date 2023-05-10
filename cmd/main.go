@@ -4,11 +4,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/labi-le/history-wallpaper/pkg/api"
-	"github.com/labi-le/history-wallpaper/pkg/browser"
-	"github.com/labi-le/history-wallpaper/pkg/log"
-	"github.com/labi-le/history-wallpaper/pkg/wallpaper"
-	"github.com/labi-le/history-wallpaper/pkg/wptool"
+	"github.com/labi-le/sway-wallpaper/pkg/api"
+	"github.com/labi-le/sway-wallpaper/pkg/browser"
+	"github.com/labi-le/sway-wallpaper/pkg/log"
+	"github.com/labi-le/sway-wallpaper/pkg/wallpaper"
+	"github.com/labi-le/sway-wallpaper/pkg/wptool"
 	"github.com/nightlyone/lockfile"
 	"github.com/vcraescu/go-xrandr"
 	"golang.org/x/net/context"
@@ -27,14 +27,14 @@ var (
 	ErrWallpaperToolNotImplemented = errors.New("invalid wallpaper tool not implemented")
 	ErrWallpaperAPINotImplemented  = errors.New("invalid wallpaper api not implemented")
 	ErrInvalidFollowDuration       = errors.New("invalid follow. e.g. 1h, 1m, 1s")
-	ErrHWAlreadyRunning            = errors.New("hw is already running. pid %d")
+	ErrSwayWallpaperAlreadyRunning = errors.New("sway-wallpaper is already running. pid %d")
 	ErrCannotLock                  = errors.New("cannot get locked process: %s")
 	ErrInvalidResolution           = errors.New("invalid resolution. e.g. 1920x1080")
 	ErrCannotUnlock                = errors.New("cannot unlock process: %s")
 	ErrAutoResolutionNotSupported  = errors.New("xrandr not found. Please install xrandr or set resolution manually")
 )
 
-const LockFile = "hw.lck"
+const LockFile = "sway-wallpaper.lck"
 
 func main() {
 	lock := MustLock()
@@ -49,15 +49,15 @@ func main() {
 	}
 
 	opt := Parse(api.Available(), wptool.Available(), browser.Available(), usr)
-	hw := wallpaper.MustHW(opt)
+	wp := wallpaper.Must(opt)
 
 	if opt.FollowDuration == 0 {
-		if hwErr := hw.Set(ctx); hwErr != nil {
+		if wpErr := wp.Set(ctx); wpErr != nil {
 			if errors.Is(err, context.Canceled) {
 				log.Warnf("Handling interrupt signal")
 				return
 			}
-			log.Error(hwErr)
+			log.Error(wpErr)
 		}
 		<-ctx.Done()
 		return
@@ -66,12 +66,12 @@ func main() {
 	for {
 		reuse, currentCancel := context.WithTimeout(ctx, opt.FollowDuration)
 
-		if hwErr := hw.Set(reuse); hwErr != nil {
-			if errors.Is(hwErr, context.Canceled) {
+		if wpErr := wp.Set(reuse); wpErr != nil {
+			if errors.Is(wpErr, context.Canceled) {
 				log.Warnf("Handling interrupt signal")
 				break
 			}
-			log.Error(hwErr)
+			log.Error(wpErr)
 		}
 
 		<-reuse.Done()
@@ -181,7 +181,7 @@ func MustLock() lockfile.Lockfile {
 		if err != nil {
 			log.Fatalf(ErrCannotLock.Error(), err)
 		}
-		log.Fatalf(ErrHWAlreadyRunning.Error(), owner.Pid)
+		log.Fatalf(ErrSwayWallpaperAlreadyRunning.Error(), owner.Pid)
 	}
 
 	return lock

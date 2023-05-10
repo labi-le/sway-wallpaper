@@ -1,4 +1,4 @@
-PROJ_NAME = hw
+PROJ_NAME = sway-wallpaper
 
 MAIN_PATH = cmd/main.go
 BUILD_PATH = build/package/

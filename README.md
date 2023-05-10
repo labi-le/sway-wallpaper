@@ -1,8 +1,6 @@
-# history-wallpaper
+# sway-wallpaper
 
-"History Wallpaper" - a project that uses search queries from your browser history to find and set images
-as your wallpaper. Automatically update your desktop background with relevance to your interests.
-
+Sway Wallpaper - a project that dynamically manages the wallpaper on the Sway desktop. It can use browser history to search for images, and it can also use a search phrase to search for images on the web. Several wallpaper managers are supported, as well as several image search APIs
 ## Working mode
 - Browser history search mode
 - Search by phrase mode (`search-phrase` option)
@@ -23,18 +21,18 @@ make install
 ```
 
 ## Prebuilt binaries
-https://github.com/labi-le/history-wallpaper/releases
+https://github.com/labi-le/sway-wallpaper/releases
 
 ## Usage
 
 ```
-hw
+sway-wallpaper
 ```
 
 ## Examples of usage
 
 ```
-Usage of hw:
+Usage of sway-wallpaper:
   -browser string
         browser to use. Available: [vivaldi chrome chromium brave opera firefox] (default "vivaldi")
   -follow string
@@ -57,35 +55,35 @@ Usage of hw:
 Update your wallpaper every hour with wbg manager:
 
 ```
-hw -wp-tool wbg -follow 1h
+sway-wallpaper -wp-tool wbg -follow 1h
 ```
 
 Update your wallpaper every 30 minute with swaybg manager:
 
 ```
-hw -follow 30m
+sway-wallpaper -follow 30m
 ```
 
-Use ghw as dynamic wallpaper:
+Use sway-wallpaper as dynamic wallpaper:
 
 ```
-hw -follow 1h -search-phrase space
+sway-wallpaper -follow 1h -search-phrase space
 ```
 
 Direct path to browser history file (firefox-based)
 ```
-hw -browser firefox -history-file ~/.mozilla/icecat/gxda4hpz.default-1672760493248/formhistory.sqlite
+sway-wallpaper -browser firefox -history-file ~/.mozilla/icecat/gxda4hpz.default-1672760493248/formhistory.sqlite
 ```
 
 Direct path to browser history file (chromium-based)
 ```
-hw -browser vivaldi -history-file ~/.config/vivaldi/Default/History
+sway-wallpaper -browser vivaldi -history-file ~/.config/vivaldi/Default/History
 ```
 
 Add sway autostart:
 
 ```
-exec hw [options]
+exec sway-wallpaper [options]
 ```
 
 ## TODO (maybe never)

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/labi-le/history-wallpaper/pkg/log"
+	"github.com/labi-le/sway-wallpaper/pkg/log"
 	"io"
 	"os"
 	"os/user"
