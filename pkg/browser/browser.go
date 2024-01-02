@@ -7,25 +7,16 @@ import (
 	"github.com/labi-le/sway-wallpaper/pkg/log"
 	"io"
 	"os"
-	"os/user"
-)
-
-var (
-	ChromiumBasedBrowsers = []string{"vivaldi", "chrome", "chromium", "brave", "opera"}
-	FirefoxBasedBrowsers  = []string{"firefox"}
 )
 
 var (
 	ErrHistoryIsEmpty = errors.New("browser history is empty")
 )
 
-func Available() []string {
-	return append(ChromiumBasedBrowsers, FirefoxBasedBrowsers...)
-}
-
-type PhraseFinder interface {
-	LastSearchedPhrase() (string, error)
-}
+var (
+	ChromiumBasedBrowsers = []string{"vivaldi", "chrome", "chromium", "brave", "opera"}
+	FirefoxBasedBrowsers  = []string{"firefox"}
+)
 
 func IsChromiumBased(browser string) bool {
 	for _, b := range ChromiumBasedBrowsers {
@@ -37,32 +28,14 @@ func IsChromiumBased(browser string) bool {
 	return false
 }
 
-func MustBrowser(browserName string, usr *user.User, historyPath string) PhraseFinder {
-	if IsChromiumBased(browserName) {
-		return &Chromium{
-			Name:    browserName,
-			History: openHistoryDB(browserName, usr, historyPath),
-		}
-	}
-
-	if browserName == Noop {
-		return NewNoop()
-	}
-
-	return &Firefox{
-		Name:    browserName,
-		History: openHistoryDB(browserName, usr, historyPath),
-	}
-}
-
-func openHistoryDB(browserName string, u *user.User, fullPath string) *History {
+func OpenHistoryDB(browserName string, fullPath string) *History {
 	var path string
 
 	if IsChromiumBased(browserName) {
 		if fullPath != "" {
 			path = fullPath
 		} else {
-			path = fmt.Sprintf("%s/.config/%s/Default/History", u.HomeDir, browserName)
+			path = fmt.Sprintf("%s/.config/%s/Default/History", os.Getenv("HOME"), browserName)
 		}
 
 		return copyHistoryFile(path)
@@ -75,6 +48,7 @@ func openHistoryDB(browserName string, u *user.User, fullPath string) *History {
 	return copyHistoryFile(path)
 }
 
+// TODO: copy to memory instead of disk
 func copyHistoryFile(path string) *History {
 	lockedDB, osErr := os.Open(path)
 	if osErr != nil {

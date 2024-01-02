@@ -10,7 +10,7 @@ type Firefox struct {
 	History *History
 }
 
-func (f *Firefox) LastSearchedPhrase() (string, error) {
+func (f *Firefox) Analyze() (string, error) {
 	defer f.History.Cleanup()
 
 	rows := f.History.DB.QueryRow(`

@@ -1,0 +1,75 @@
+package manager
+
+import (
+	"context"
+	"errors"
+	"github.com/labi-le/sway-wallpaper/pkg/browser"
+	"github.com/labi-le/sway-wallpaper/pkg/fs"
+	"github.com/labi-le/sway-wallpaper/pkg/log"
+	"github.com/labi-le/sway-wallpaper/pkg/output"
+	"os/user"
+	"time"
+)
+
+type Options struct {
+	SearchPhrase      string
+	SaveWallpaperPath string
+	FollowDuration    time.Duration
+	Resolution        output.Resolution
+	API               string
+	Tool              string
+	HistoryFile       string
+	Browser           string
+	Usr               *user.User
+}
+
+type Manager struct {
+	Options       Options
+	WallpaperAPI  Searcher
+	Analyzer      Analyzer
+	WallpaperTool Setter
+}
+
+func New(opt Options) *Manager {
+	if opt.SearchPhrase != "" {
+		opt.Browser = browser.NoopBrowser
+	}
+	return &Manager{
+		WallpaperAPI:  MustSearcher(opt.API),
+		WallpaperTool: MustBGTool(opt.Tool),
+		Analyzer:      NewBrowserHistoryAnalyzer(opt.Browser, opt.HistoryFile),
+		Options:       opt,
+	}
+}
+
+func (m *Manager) Set(ctx context.Context) error {
+	if m.Options.SearchPhrase == "" {
+		log.Info("Searching phrase not provided, trying to get last searched phrase from browser")
+		var searchPhErr error
+		m.Options.SearchPhrase, searchPhErr = m.Analyzer.Analyze()
+		if searchPhErr != nil {
+			return searchPhErr
+		}
+	}
+
+	log.Infof("Search for %s", m.Options.SearchPhrase)
+	img, searchErr := m.WallpaperAPI.Search(ctx, m.Options.SearchPhrase, m.Options.Resolution)
+	if searchErr != nil {
+		return searchErr
+	}
+
+	defer img.Close()
+
+	log.Infof("Save wallpaper to %s", m.Options.SaveWallpaperPath)
+	path, saveErr := fs.SaveFile(img, m.Options.SaveWallpaperPath)
+	if saveErr != nil {
+		return saveErr
+	}
+
+	log.Infof("Set wallpaper from %s", path)
+	if err := m.WallpaperTool.Set(ctx, path, "*"); err != nil && !errors.Is(err, context.Canceled) {
+		return err
+	}
+
+	return nil
+}

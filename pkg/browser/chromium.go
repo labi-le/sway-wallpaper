@@ -12,7 +12,7 @@ type Chromium struct {
 	History *History
 }
 
-func (b *Chromium) LastSearchedPhrase() (string, error) {
+func (b *Chromium) Analyze() (string, error) {
 	defer b.History.Cleanup()
 
 	// It is also possible to search in the keyword_search_terms table,

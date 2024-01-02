@@ -1,13 +1,13 @@
 package browser
 
-const Noop = "noop"
+const NoopBrowser = "noop"
 
-type noop struct{}
+type Noop struct{}
 
-func NewNoop() PhraseFinder {
-	return &noop{}
+func NewNoop() *Noop {
+	return &Noop{}
 }
 
-func (n *noop) LastSearchedPhrase() (string, error) {
+func (n *Noop) Analyze() (string, error) {
 	return "", nil
 }

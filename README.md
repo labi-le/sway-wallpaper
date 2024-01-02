@@ -9,7 +9,7 @@ Sway Wallpaper - a project that dynamically manages the wallpaper on the Sway de
 
 - Wayland
 - Chromium\Firefox-based browser - parsing history file, non required if use `search-phrase` option
-- Utilities for setting wallpaper -`swaybg`,`wbg`
+- Utilities for setting wallpaper -`swaybg`
 - `xrandr` - for resolution detection, non required if you specify resolution manually
 - Internet connection - for find and downloading images
 - Go - for building, non required if you use prebuilt binaries
@@ -49,7 +49,7 @@ Usage of sway-wallpaper:
   -wp-api string
         wallpaper api to use. Available: [unsplash] (default "unsplash")
   -wp-tool string
-        wallpaper tool to use. Available: [swaybg wbg] (default "swaybg")
+        wallpaper tool to use. Available: [swaybg] (default "swaybg")
 ```
 
 Update your wallpaper every hour with wbg manager:
