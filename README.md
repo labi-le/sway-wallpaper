@@ -40,8 +40,8 @@ Usage of sway-wallpaper:
   -history-file string
         browser history file to use. Auto detect if empty (only for chromium based browsers)
         e.g ~/.mozilla/icecat/gxda4hpz.default-1672760493248/formhistory.sqlite
-  -resolution string
-        resolution to use. e.g. 1920x1080 (default "1920x1080")
+  -image-resolution string
+        image resolution. e.g. 1920x1080
   -save-image-dir string
         directory to save image to (default "/home/labile/Pictures")
   -search-phrase string
@@ -50,6 +50,8 @@ Usage of sway-wallpaper:
         wallpaper api to use. Available: [unsplash] (default "unsplash")
   -wp-tool string
         wallpaper tool to use. Available: [swaybg] (default "swaybg")
+  -output string
+        output to operate on. e.g eDP-1 (default "*")
 ```
 
 Update your wallpaper every hour with wbg manager:

@@ -6,22 +6,7 @@ import (
 	"github.com/labi-le/sway-wallpaper/pkg/browser"
 	"github.com/labi-le/sway-wallpaper/pkg/fs"
 	"github.com/labi-le/sway-wallpaper/pkg/log"
-	"github.com/labi-le/sway-wallpaper/pkg/output"
-	"os/user"
-	"time"
 )
-
-type Options struct {
-	SearchPhrase      string
-	SaveWallpaperPath string
-	FollowDuration    time.Duration
-	Resolution        output.Resolution
-	API               string
-	Tool              string
-	HistoryFile       string
-	Browser           string
-	Usr               *user.User
-}
 
 type Manager struct {
 	Options       Options
@@ -53,7 +38,7 @@ func (m *Manager) Set(ctx context.Context) error {
 	}
 
 	log.Infof("Search for %s", m.Options.SearchPhrase)
-	img, searchErr := m.WallpaperAPI.Search(ctx, m.Options.SearchPhrase, m.Options.Resolution)
+	img, searchErr := m.WallpaperAPI.Search(ctx, m.Options.SearchPhrase, m.Options.ImageResolution)
 	if searchErr != nil {
 		return searchErr
 	}
@@ -67,7 +52,7 @@ func (m *Manager) Set(ctx context.Context) error {
 	}
 
 	log.Infof("Set wallpaper from %s", path)
-	if err := m.WallpaperTool.Set(ctx, path, "*"); err != nil && !errors.Is(err, context.Canceled) {
+	if err := m.WallpaperTool.Set(ctx, path, m.Options.Output.ID); err != nil && !errors.Is(err, context.Canceled) {
 		return err
 	}
 

@@ -6,7 +6,7 @@ BUILD_PATH = build/package/
 INSTALL_PATH = /usr/bin/
 
 run:
-	go run $(MAIN_PATH) -follow 5s -search-phrase galaxy
+	go run $(MAIN_PATH) -follow 5s -search-phrase galaxy -output HDMI-A-2 -image-resolution 1920x1080
 
 build: clean
 	go build --ldflags '-extldflags "-static"' -v -o $(BUILD_PATH)$(PROJ_NAME) $(MAIN_PATH)
