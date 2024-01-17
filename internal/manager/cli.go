@@ -3,7 +3,6 @@ package manager
 import (
 	"flag"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/labi-le/sway-wallpaper/pkg/log"
 	"os"
 )
@@ -38,8 +37,6 @@ func ParseOptions() Options {
 	if err := opt.Validate(); err != nil {
 		log.Fatal(err)
 	}
-
-	spew.Dump(opt)
 
 	return opt
 }
