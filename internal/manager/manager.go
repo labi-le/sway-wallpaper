@@ -27,7 +27,7 @@ func New(opt Options) *Manager {
 	}
 }
 
-func (m *Manager) Set(ctx context.Context) error {
+func (m *Manager) Provide(ctx context.Context) error {
 	if m.Options.SearchPhrase == "" {
 		log.Info("Searching phrase not provided, trying to get last searched phrase from browser")
 		var searchPhErr error
@@ -51,10 +51,14 @@ func (m *Manager) Set(ctx context.Context) error {
 		return saveErr
 	}
 
-	log.Infof("Set wallpaper from %s", path)
+	log.Infof("Provide wallpaper from %s", path)
 	if err := m.WallpaperTool.Set(ctx, path, m.Options.Output.ID); err != nil && !errors.Is(err, context.Canceled) {
 		return err
 	}
 
 	return nil
+}
+
+func (m *Manager) Close() error {
+	return m.WallpaperTool.Clean()
 }

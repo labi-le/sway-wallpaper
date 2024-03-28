@@ -29,14 +29,15 @@ func main() {
 
 	opt := manager.ParseOptions()
 	wp := manager.New(opt)
+	defer wp.Close()
 
 	if opt.FollowDuration == 0 {
-		if wpErr := wp.Set(ctx); wpErr != nil {
+		if wpErr := wp.Provide(ctx); wpErr != nil {
 			if errors.Is(wpErr, context.Canceled) {
 				log.Warnf("Handling interrupt signal")
-				return
 			}
-			log.Error(wpErr)
+
+			return
 		}
 		<-ctx.Done()
 		return
@@ -45,7 +46,7 @@ func main() {
 	for {
 		reuse, currentCancel := context.WithTimeout(ctx, opt.FollowDuration)
 
-		if wpErr := wp.Set(reuse); wpErr != nil {
+		if wpErr := wp.Provide(reuse); wpErr != nil {
 			if errors.Is(wpErr, context.Canceled) {
 				log.Warnf("Handling interrupt signal")
 				break

@@ -42,7 +42,7 @@ func OpenHistoryDB(browserName string, fullPath string) *History {
 	}
 
 	if fullPath == "" {
-		panic("firefox-based browsers not support auto-detecting history file. Set formhistory.sqlite path manually")
+		panic("firefox-based browsers not support auto-detecting history file. Provide formhistory.sqlite path manually")
 	}
 
 	return copyHistoryFile(path)

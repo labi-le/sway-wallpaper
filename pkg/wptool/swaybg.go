@@ -17,3 +17,7 @@ func (SwayBG) Set(ctx context.Context, path, output string) error {
 		output,
 	).Start()
 }
+
+func (SwayBG) Clean() error {
+	return nil
+}
