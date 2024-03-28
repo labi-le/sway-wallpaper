@@ -13,7 +13,7 @@ func MustLogger() *logrus.Logger {
 		FullTimestamp: true,
 	})
 
-	l.SetReportCaller(false)
+	l.SetReportCaller(true)
 
 	return l
 }
