@@ -8,7 +8,7 @@ require (
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/vcraescu/go-xrandr v0.0.0-20201121120806-4e66d7925a73
-	modernc.org/sqlite v1.36.0
+	modernc.org/sqlite v1.36.1
 )
 
 require (
