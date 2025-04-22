@@ -3,7 +3,7 @@ package browser
 import (
 	"database/sql"
 	"errors"
-	"github.com/labi-le/sway-wallpaper/pkg/log"
+	"github.com/rs/zerolog/log"
 	"net/url"
 )
 
@@ -40,6 +40,6 @@ LIMIT 1;
 	}
 
 	phrase := ur.Query().Get("q")
-	log.Infof("Last searched phrase: %s", phrase)
+	log.Info().Msgf("last searched phrase: %s", phrase)
 	return phrase, nil
 }

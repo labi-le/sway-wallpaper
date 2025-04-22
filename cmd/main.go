@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/labi-le/sway-wallpaper/internal/manager"
-	"github.com/labi-le/sway-wallpaper/pkg/log"
 	"github.com/nightlyone/lockfile"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	_ "modernc.org/sqlite"
 	"os"
 	"os/signal"
@@ -27,14 +29,22 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	opt := manager.ParseOptions()
-	wp := manager.New(opt)
+	opt, err := manager.ParseOptions()
+	if err != nil {
+		log.Fatal().Err(err).Send()
+	}
+	wp, err := manager.New(opt)
+	if err != nil {
+		log.Fatal().Err(err).Send()
+	}
 	defer wp.Close()
+
+	initLogger(opt.Debug)
 
 	if opt.FollowDuration == 0 {
 		if wpErr := wp.Provide(ctx); wpErr != nil {
 			if errors.Is(wpErr, context.Canceled) {
-				log.Warnf("Handling interrupt signal")
+				log.Warn().Msg("Handling interrupt signal")
 			}
 
 			return
@@ -48,10 +58,10 @@ func main() {
 
 		if wpErr := wp.Provide(reuse); wpErr != nil {
 			if errors.Is(wpErr, context.Canceled) {
-				log.Warnf("Handling interrupt signal")
+				log.Warn().Msg("Handling interrupt signal")
 				break
 			}
-			log.Error(wpErr)
+			log.Fatal().Err(wpErr).Msg("start error")
 		}
 
 		<-reuse.Done()
@@ -65,9 +75,9 @@ func MustLock() lockfile.Lockfile {
 	if lockErr := lock.TryLock(); lockErr != nil {
 		owner, err := lock.GetOwner()
 		if err != nil {
-			log.Fatalf(ErrCannotLock.Error(), err)
+			log.Fatal().Err(fmt.Errorf("%w: %v", ErrCannotLock, err))
 		}
-		log.Fatalf(ErrSwayWallpaperAlreadyRunning.Error(), owner.Pid)
+		log.Fatal().Err(fmt.Errorf("%w: pid: %d", ErrSwayWallpaperAlreadyRunning, owner.Pid))
 	}
 
 	return lock
@@ -75,6 +85,28 @@ func MustLock() lockfile.Lockfile {
 
 func Unlock(lock lockfile.Lockfile) {
 	if err := lock.Unlock(); err != nil {
-		log.Fatalf(ErrCannotUnlock.Error(), err)
+		log.Fatal().Err(fmt.Errorf("%w: %v", ErrCannotUnlock, err))
 	}
+}
+
+func initLogger(debug bool) {
+	if debug {
+		log.Logger = log.With().Caller().Logger().Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+		zerolog.CallerMarshalFunc = func(_ uintptr, file string, line int) string {
+			short := file
+			for i := len(file) - 1; i > 0; i-- {
+				if file[i] == '/' {
+					short = file[i+1:]
+					break
+				}
+			}
+			file = short
+			return fmt.Sprintf("%s:%d", file, line)
+		}
+		zerolog.SetGlobalLevel(zerolog.TraceLevel)
+		return
+	}
+
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 }

@@ -3,11 +3,11 @@ package manager
 import (
 	"flag"
 	"fmt"
-	"github.com/labi-le/sway-wallpaper/pkg/log"
+	"github.com/labi-le/sway-wallpaper/pkg/wallpaper"
 	"os"
 )
 
-func ParseOptions() Options {
+func ParseOptions() (Options, error) {
 	var (
 		opt Options
 	)
@@ -25,20 +25,21 @@ func ParseOptions() Options {
 	flag.Var(&opt.ImageResolution, "image-resolution", "image resolution. e.g. 1920x1080")
 	flag.Var(&opt.Output, "output", "output to operate on. e.g eDP-1")
 	flag.StringVar(&opt.Tool,
-		"wp-tool", AvailableBGTools()[0], "wallpaper tool to use. Available: "+fmt.Sprint(AvailableBGTools()))
+		"wp-tool", wallpaper.AvailableProvider.String(), "wallpaper tool to use. Available: "+fmt.Sprint(wallpaper.AvailableProvider))
 	flag.StringVar(&opt.API,
 		"wp-api", AvailableAPIs()[0], "wallpaper api to use. Available: "+fmt.Sprint(AvailableAPIs()))
 	flag.StringVar(&opt.SaveWallpaperPath, "save-image-dir", os.Getenv("HOME")+"/Pictures", "directory to save image to")
 	flag.StringVar(&opt.SearchPhrase, "search-phrase", "", "search phrase to use")
 	flag.DurationVar(&opt.FollowDuration, "follow", 0, "follow a time interval and update wallpaper. e.g. 1h, 1m, 30s")
+	flag.BoolVar(&opt.Debug, "debug", false, "enable debug logs")
 
 	flag.Parse()
 
 	if err := opt.Validate(); err != nil {
-		log.Fatal(err)
+		return opt, fmt.Errorf("invalid options: %v", err)
 	}
 
-	return opt
+	return opt, nil
 }
 
 func checkAvailable(concrete string, available []string) bool {

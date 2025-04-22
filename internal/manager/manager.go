@@ -3,33 +3,41 @@ package manager
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/labi-le/sway-wallpaper/pkg/browser"
 	"github.com/labi-le/sway-wallpaper/pkg/fs"
-	"github.com/labi-le/sway-wallpaper/pkg/log"
+	"github.com/labi-le/sway-wallpaper/pkg/wallpaper"
+	"github.com/rs/zerolog/log"
 )
 
 type Manager struct {
 	Options       Options
 	WallpaperAPI  Searcher
 	Analyzer      Analyzer
-	WallpaperTool Setter
+	WallpaperTool wallpaper.Tool
 }
 
-func New(opt Options) *Manager {
+func New(opt Options) (*Manager, error) {
 	if opt.SearchPhrase != "" {
 		opt.Browser = browser.NoopBrowser
 	}
+
+	tool, err := wallpaper.ByName(opt.Tool)
+	if err != nil {
+		return nil, fmt.Errorf("failed to found wallpaper tool provider: %v", err)
+	}
 	return &Manager{
 		WallpaperAPI:  MustSearcher(opt.API),
-		WallpaperTool: MustBGTool(opt.Tool),
+		WallpaperTool: tool,
 		Analyzer:      NewBrowserHistoryAnalyzer(opt.Browser, opt.HistoryFile),
 		Options:       opt,
-	}
+	}, nil
 }
 
 func (m *Manager) Provide(ctx context.Context) error {
 	if m.Options.SearchPhrase == "" {
-		log.Info("Searching phrase not provided, trying to get last searched phrase from browser")
+		log.Trace().Msg("searching phrase not provided, trying to get last searched phrase from browser")
+
 		var searchPhErr error
 		m.Options.SearchPhrase, searchPhErr = m.Analyzer.Analyze()
 		if searchPhErr != nil {
@@ -37,7 +45,8 @@ func (m *Manager) Provide(ctx context.Context) error {
 		}
 	}
 
-	log.Infof("Search for %s", m.Options.SearchPhrase)
+	log.Trace().Msgf("search for %s", m.Options.SearchPhrase)
+
 	img, searchErr := m.WallpaperAPI.Search(ctx, m.Options.SearchPhrase, m.Options.ImageResolution)
 	if searchErr != nil {
 		return searchErr
@@ -45,14 +54,15 @@ func (m *Manager) Provide(ctx context.Context) error {
 
 	defer img.Close()
 
-	log.Infof("Save wallpaper to %s", m.Options.SaveWallpaperPath)
+	log.Trace().Msgf("save wallpaper to %s", m.Options.SaveWallpaperPath)
+
 	path, saveErr := fs.SaveFile(img, m.Options.SaveWallpaperPath)
 	if saveErr != nil {
 		return saveErr
 	}
+	log.Trace().Msgf("provide wallpaper from %s", path)
 
-	log.Infof("Provide wallpaper from %s", path)
-	if err := m.WallpaperTool.Set(ctx, path, m.Options.Output.ID); err != nil && !errors.Is(err, context.Canceled) {
+	if err := m.WallpaperTool.Change(ctx, path, m.Options.Output.ID); err != nil && !errors.Is(err, context.Canceled) {
 		return err
 	}
 
@@ -60,5 +70,8 @@ func (m *Manager) Provide(ctx context.Context) error {
 }
 
 func (m *Manager) Close() error {
-	return m.WallpaperTool.Clean()
+	if closer, ok := m.WallpaperTool.(wallpaper.ToolDestructor); ok {
+		return closer.Close()
+	}
+	return nil
 }

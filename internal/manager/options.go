@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/hashicorp/go-multierror"
 	"github.com/labi-le/sway-wallpaper/pkg/output"
+	"github.com/labi-le/sway-wallpaper/pkg/wallpaper"
 	"time"
 )
 
@@ -26,6 +27,7 @@ type Options struct {
 	HistoryFile       string
 	Browser           string
 	Output            output.Monitor
+	Debug             bool
 }
 
 func (o Options) Validate() error {
@@ -34,7 +36,7 @@ func (o Options) Validate() error {
 		err = multierror.Append(err, ErrBrowserNotImplemented)
 	}
 
-	if !checkAvailable(o.Tool, AvailableBGTools()) {
+	if _, ok := wallpaper.SupportedProvider[o.Tool]; !ok {
 		err = multierror.Append(err, ErrWallpaperToolNotImplemented)
 	}
 

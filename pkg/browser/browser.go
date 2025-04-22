@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/labi-le/sway-wallpaper/pkg/log"
+	"github.com/rs/zerolog/log"
 	"io"
 	"os"
 )
@@ -48,7 +48,6 @@ func OpenHistoryDB(browserName string, fullPath string) *History {
 	return copyHistoryFile(path)
 }
 
-// TODO: copy to memory instead of disk
 func copyHistoryFile(path string) *History {
 	lockedDB, osErr := os.Open(path)
 	if osErr != nil {
@@ -66,7 +65,7 @@ func copyHistoryFile(path string) *History {
 	if ioErr != nil {
 		panic(ioErr)
 	}
-	log.Infof("Copied %d bytes from %s to %s", written, path, temp.Name())
+	log.Info().Msgf("copied %d bytes from %s to %s", written, path, temp.Name())
 
 	db, sqlErr := sql.Open("sqlite", temp.Name()+"?")
 	if sqlErr != nil {
