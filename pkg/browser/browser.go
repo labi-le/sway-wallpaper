@@ -14,7 +14,7 @@ var (
 )
 
 var (
-	ChromiumBasedBrowsers = []string{"vivaldi", "chrome", "chromium", "brave", "opera"}
+	ChromiumBasedBrowsers = []string{"chrome", "vivaldi", "chromium", "brave", "opera"}
 	FirefoxBasedBrowsers  = []string{"firefox"}
 )
 

@@ -45,7 +45,7 @@ func (m *Manager) Provide(ctx context.Context) error {
 		}
 	}
 
-	log.Trace().Msgf("search for %s", m.Options.SearchPhrase)
+	log.Trace().Msgf("search: %s", m.Options.SearchPhrase)
 
 	img, searchErr := m.WallpaperAPI.Search(ctx, m.Options.SearchPhrase, m.Options.ImageResolution)
 	if searchErr != nil {

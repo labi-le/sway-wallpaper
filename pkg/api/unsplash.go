@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	ErrConnectionTimeOut = errors.New("api %s connection timeout")
+	ErrConnectionTimeOut = errors.New("connection timeout")
 )
 
 const (
@@ -164,7 +164,7 @@ func (u *Unsplash) Search(ctx context.Context, q string, resolution output.Resol
 		return nil, err
 	}
 
-	get, err := http.Get(fmt.Sprintf("%s&w=%d&h=%d", url, resolution.Width, resolution.Height))
+	get, err := u.client.Get(fmt.Sprintf("%s&w=%d&h=%d", url, resolution.Width, resolution.Height))
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (u *Unsplash) Search(ctx context.Context, q string, resolution output.Resol
 
 func (u *Unsplash) tryFetch(req *http.Request) (string, error) {
 	for i := 0; i < 5; i++ {
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := u.client.Do(req)
 		if err != nil {
 			return "", fmt.Errorf("server returned an error: %v", err)
 		}
@@ -199,9 +199,10 @@ type api struct {
 
 func (a *api) Do(req *http.Request) (*http.Response, error) {
 	do, err := a.Client.Do(req)
-	if errors.Is(err, context.DeadlineExceeded) {
-		return nil, fmt.Errorf(ErrConnectionTimeOut.Error(), req.URL.String())
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return nil, fmt.Errorf("%v: api: %s", ErrConnectionTimeOut, req.URL.String())
+	default:
+		return do, err
 	}
-
-	return do, err
 }

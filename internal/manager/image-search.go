@@ -12,6 +12,7 @@ var (
 	ErrUnknownService = errors.New("unknown service")
 )
 
+// todo move to pkg
 type Searcher interface {
 	Search(ctx context.Context, q string, resolution output.Resolution) (io.ReadCloser, error)
 }

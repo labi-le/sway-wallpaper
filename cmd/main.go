@@ -41,7 +41,8 @@ func main() {
 
 	initLogger(opt.Debug)
 
-	if opt.FollowDuration == 0 {
+	log.Trace().Msgf("follow enabled: %t, follow duration: %s", opt.Follow, opt.FollowDuration)
+	if !opt.Follow {
 		if wpErr := wp.Provide(ctx); wpErr != nil {
 			if errors.Is(wpErr, context.Canceled) {
 				log.Warn().Msg("Handling interrupt signal")
@@ -57,11 +58,11 @@ func main() {
 		reuse, currentCancel := context.WithTimeout(ctx, opt.FollowDuration)
 
 		if wpErr := wp.Provide(reuse); wpErr != nil {
-			if errors.Is(wpErr, context.Canceled) {
-				log.Warn().Msg("Handling interrupt signal")
+			if errors.Is(ctx.Err(), context.Canceled) {
+				log.Warn().Msg("handling interrupt signal")
 				break
 			}
-			log.Fatal().Err(wpErr).Msg("start error")
+			log.Fatal().Err(wpErr).Msg("provide error")
 		}
 
 		<-reuse.Done()

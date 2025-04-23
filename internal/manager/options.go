@@ -20,6 +20,7 @@ type Validator interface {
 type Options struct {
 	SearchPhrase      string
 	SaveWallpaperPath string
+	Follow            bool
 	FollowDuration    time.Duration
 	ImageResolution   output.Resolution
 	API               string
