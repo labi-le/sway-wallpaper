@@ -97,5 +97,19 @@ exec sway-wallpaper [options]
 - [x] Chromium based browser support
 - [x] Firefox support
 - [x] Resolution auto detection
-- [ ] Google image provider without API key
-- [ ] Pinterest?
+- [ ] refactor shitcode
+- [ ] check another providers (Pixabay
+  Flickr
+  Pexels
+  StockSnap
+  Burst
+  Visual Hunt
+  ISO Republic
+  PicJumbo
+  Kaboompics
+  Life of Pix
+  Freestock
+  MMT Stock
+  ShotStash
+  FreeRange
+  )
