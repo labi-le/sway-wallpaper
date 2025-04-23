@@ -18,7 +18,7 @@ var (
 
 const (
 	ua    = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Mobile Safari/537.36"
-	query = "https://unsplash.com/napi/photos/random?page=1&per_page=10&query=%s&xp=new-plus-algorithm:experiment&plus=none&orientation=landscape"
+	query = "https://unsplash.com/napi/photos/random?query=%s&xp=new-plus-algorithm:experiment&plus=none&orientation=landscape"
 )
 
 type Unsplash struct {
