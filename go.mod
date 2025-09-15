@@ -10,7 +10,7 @@ require (
 	github.com/nightlyone/lockfile v1.0.0
 	github.com/rs/zerolog v1.34.0
 	github.com/vcraescu/go-xrandr v0.0.0-20250120044713-67143ce1bea9
-	modernc.org/sqlite v1.38.2
+	modernc.org/sqlite v1.39.0
 )
 
 require (
