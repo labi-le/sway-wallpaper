@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"io"
 	"os"
+
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -14,7 +15,7 @@ var (
 )
 
 var (
-	ChromiumBasedBrowsers = []string{"chrome", "vivaldi", "chromium", "brave", "opera"}
+	ChromiumBasedBrowsers = []string{"google-chrome", "vivaldi", "chromium", "brave", "opera"}
 	FirefoxBasedBrowsers  = []string{"firefox"}
 )
 
