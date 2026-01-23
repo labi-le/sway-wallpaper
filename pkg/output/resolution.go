@@ -31,6 +31,10 @@ func (r *Resolution) Set(s string) error {
 	return ErrInvalidResolution
 }
 
+func (r *Resolution) Type() string {
+	return "resolution"
+}
+
 func NewWithString(s string) (Resolution, error) {
 	r := Resolution{}
 	_, err := fmt.Sscanf(s, "%dx%d", &r.Width, &r.Height)

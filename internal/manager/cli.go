@@ -1,11 +1,14 @@
 package manager
 
 import (
-	"flag"
 	"fmt"
-	"github.com/labi-le/sway-wallpaper/pkg/wallpaper"
 	"os"
 	"time"
+
+	"github.com/labi-le/sway-wallpaper/pkg/api"
+	"github.com/labi-le/sway-wallpaper/pkg/browser"
+	"github.com/labi-le/sway-wallpaper/pkg/wallpaper"
+	flag "github.com/spf13/pflag"
 )
 
 func ParseOptions() (Options, error) {
@@ -16,8 +19,8 @@ func ParseOptions() (Options, error) {
 	flag.StringVar(
 		&opt.Browser,
 		"browserName",
-		AvailableBrowsers()[0],
-		"Available: "+fmt.Sprint(AvailableBrowsers()),
+		browser.AvailableBrowsers()[0],
+		"Available: "+fmt.Sprint(browser.AvailableBrowsers()),
 	)
 	flag.StringVar(&opt.HistoryFile, "history-file", "",
 		"path to history file. Auto-detect if empty (only for chromium based browsers)\n"+
@@ -28,12 +31,12 @@ func ParseOptions() (Options, error) {
 	flag.StringVar(&opt.Tool,
 		"tool", wallpaper.AvailableProvider.String(), "wallpaper tool to use. Available: "+fmt.Sprint(wallpaper.AvailableProvider))
 	flag.StringVar(&opt.API,
-		"api", AvailableAPIs()[0], "wallpaper api to use. Available: "+fmt.Sprint(AvailableAPIs()))
-	flag.StringVar(&opt.SaveWallpaperPath, "save-image-dir", os.Getenv("HOME")+"/Pictures", "directory to save image to")
-	flag.StringVar(&opt.SearchPhrase, "search-phrase", "", "search phrase to use")
+		"api", api.AvailableAPIs()[0], "wallpaper api to use. Available: "+fmt.Sprint(api.AvailableAPIs()))
+	flag.StringVar(&opt.SaveWallpaperPath, "save-image-dir", os.Getenv("HOME")+"/Pictures/sway-wallpaper", "directory to save image to")
+	flag.StringVar(&opt.ByPhrase, "by-phrase", "", "search phrase to use")
 	flag.DurationVar(&opt.FollowDuration, "follow-time", time.Hour, "follow a time interval and update wallpaper. e.g. 1h, 1m, 30s")
 	flag.BoolVar(&opt.Follow, "follow", false, "follow a time interval and update wallpaper. e.g. 1h, 1m, 30s")
-	flag.BoolVar(&opt.Debug, "debug", false, "enable debug logs")
+	flag.BoolVar(&opt.Verbose, "verbose", false, "enable verbose logs")
 
 	flag.Parse()
 

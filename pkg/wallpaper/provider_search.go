@@ -11,7 +11,7 @@ func ByName(tool string) (Tool, error) {
 	case "swww":
 		return NewSWWW()
 	default:
-		panic(ErrUnknownTool)
+		return nil, ErrUnknownTool
 	}
 }
 

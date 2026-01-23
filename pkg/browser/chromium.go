@@ -1,45 +1,32 @@
 package browser
 
 import (
-	"database/sql"
-	"errors"
-	"github.com/rs/zerolog/log"
-	"net/url"
+	"github.com/rs/zerolog"
 )
 
 type Chromium struct {
 	Name    string
-	History *History
+	History History
+	log     zerolog.Logger
+}
+
+func NewChromium(log zerolog.Logger, name string, history History) *Chromium {
+	return &Chromium{
+		Name:    name,
+		History: history,
+		log:     log.With().Str("component", "chromium").Logger(),
+	}
 }
 
 func (b *Chromium) Analyze() (string, error) {
-	defer b.History.Cleanup()
+	log := b.log.With().Str("op", "Analyze").Logger()
+	defer b.History.Close()
 
-	// It is also possible to search in the keyword_search_terms table,
-	// but the last query will not contain the search phrase,
-	// because repeated search queries are not displayed as the latest in search history
-	rows := b.History.DB.QueryRow(`
-		SELECT url
-FROM urls
-WHERE url LIKE 'https://www.google.com/search?%'
-ORDER BY last_visit_time DESC
-LIMIT 1;
-
-`)
-	var lastURL string
-	if err := rows.Scan(&lastURL); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = ErrHistoryIsEmpty
-		}
+	phrase, err := b.History.GetLastSearch()
+	if err != nil {
 		return "", err
 	}
 
-	ur, parseErr := url.Parse(lastURL)
-	if parseErr != nil {
-		panic(parseErr)
-	}
-
-	phrase := ur.Query().Get("q")
 	log.Info().Msgf("last searched phrase: %s", phrase)
 	return phrase, nil
 }

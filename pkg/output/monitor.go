@@ -37,6 +37,10 @@ func (m *Monitor) Set(s string) error {
 	return nil
 }
 
+func (m *Monitor) Type() string {
+	return "monitor"
+}
+
 func NewByIDXrandr(id string) (Monitor, error) {
 	var mon Monitor
 	screens, err := xrandr.GetScreens()

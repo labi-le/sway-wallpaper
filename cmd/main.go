@@ -2,98 +2,114 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/labi-le/sway-wallpaper/internal/manager"
-	"github.com/nightlyone/lockfile"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	_ "modernc.org/sqlite"
 	"os"
 	"os/signal"
-	"path/filepath"
-)
+	"syscall"
+	"time"
 
-var (
-	ErrSwayWallpaperAlreadyRunning = errors.New("sway-wallpaper is already running. pid %d")
-	ErrCannotLock                  = errors.New("cannot get locked process: %s")
-	ErrCannotUnlock                = errors.New("cannot unlock process: %s")
+	"github.com/labi-le/sway-wallpaper/internal/config"
+	"github.com/labi-le/sway-wallpaper/internal/service"
+	"github.com/labi-le/sway-wallpaper/pkg/api"
+	"github.com/labi-le/sway-wallpaper/pkg/browser"
+	"github.com/labi-le/sway-wallpaper/pkg/output"
+	"github.com/labi-le/sway-wallpaper/pkg/wallpaper"
+	"github.com/rs/zerolog"
 )
-
-const LockFile = "sway-wallpaper.lck"
 
 func main() {
-	lock := MustLock()
-	defer Unlock(lock)
+	cfg, err := config.Parse()
+	if err != nil {
+		panic(err)
+	}
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	log := initLogger(cfg.Verbose)
+
+	searcher, err := api.NewSearcher(log, cfg.APIName)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to init api")
+	}
+
+	var historyProvider service.QuerySource
+	if cfg.SearchPhrase == "" {
+		hp, err := browser.NewHistoryProvider(cfg.BrowserName, cfg.HistoryPath)
+		if err != nil {
+			log.Warn().Err(err).Msg("failed to init browser history, fallback to random or manual phrase might fail")
+		} else {
+			defer func() {
+				if closer, ok := hp.(interface{ Close() error }); ok {
+					closer.Close()
+				}
+			}()
+			historyProvider = hp
+		}
+	}
+
+	tool, err := wallpaper.ByName(cfg.ToolName)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to init wallpaper tool")
+	}
+
+	resolution := cfg.Resolution
+	if resolution.Width == 0 || resolution.Height == 0 {
+		mon, err := output.NewByIDXrandr(cfg.OutputMonitor.ID)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to detect resolution, please specify --image-resolution")
+		}
+		resolution = mon.CurrentResolution
+		log.Info().Str("res", resolution.String()).Msg("detected resolution")
+	}
+
+	svc := &service.WallpaperService{
+		Log:     log,
+		API:     searcher,
+		History: historyProvider,
+		Setter:  tool,
+	}
+
+	params := service.UpdateParams{
+		Phrase:     cfg.SearchPhrase,
+		Resolution: resolution,
+		SaveDir:    cfg.SaveDir,
+		OutputID:   cfg.OutputMonitor.ID,
+		RetryCount: 5,
+	}
+
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	opt, err := manager.ParseOptions()
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
-	wp, err := manager.New(opt)
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
-	defer wp.Close()
-
-	initLogger(opt.Debug)
-
-	log.Trace().Msgf("follow enabled: %t, follow duration: %s", opt.Follow, opt.FollowDuration)
-	if !opt.Follow {
-		if wpErr := wp.Provide(ctx); wpErr != nil {
-			if errors.Is(wpErr, context.Canceled) {
-				log.Warn().Msg("Handling interrupt signal")
-			}
-
-			return
+	run := func() {
+		if err := svc.Update(ctx, params); err != nil {
+			log.Error().Err(err).Msg("failed to update wallpaper")
 		}
-		<-ctx.Done()
+	}
+
+	run()
+
+	if !cfg.Follow {
 		return
 	}
 
+	ticker := time.NewTicker(cfg.FollowDuration)
+	defer ticker.Stop()
+
+	log.Info().Dur("interval", cfg.FollowDuration).Msg("entering watch mode")
+
 	for {
-		reuse, currentCancel := context.WithTimeout(ctx, opt.FollowDuration)
-
-		if wpErr := wp.Provide(reuse); wpErr != nil {
-			if errors.Is(ctx.Err(), context.Canceled) {
-				log.Warn().Msg("handling interrupt signal")
-				break
-			}
-			log.Fatal().Err(wpErr).Msg("provide error")
+		select {
+		case <-ctx.Done():
+			log.Info().Msg("shutting down")
+			return
+		case <-ticker.C:
+			run()
 		}
-
-		<-reuse.Done()
-		currentCancel()
 	}
 }
 
-func MustLock() lockfile.Lockfile {
-	lock, _ := lockfile.New(filepath.Join(os.TempDir(), LockFile))
+func initLogger(verbose bool) zerolog.Logger {
+	out := zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}
 
-	if lockErr := lock.TryLock(); lockErr != nil {
-		owner, err := lock.GetOwner()
-		if err != nil {
-			log.Fatal().Err(fmt.Errorf("%w: %v", ErrCannotLock, err))
-		}
-		log.Fatal().Err(fmt.Errorf("%w: pid: %d", ErrSwayWallpaperAlreadyRunning, owner.Pid))
-	}
-
-	return lock
-}
-
-func Unlock(lock lockfile.Lockfile) {
-	if err := lock.Unlock(); err != nil {
-		log.Fatal().Err(fmt.Errorf("%w: %v", ErrCannotUnlock, err))
-	}
-}
-
-func initLogger(debug bool) {
-	if debug {
-		log.Logger = log.With().Caller().Logger().Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
+	if verbose {
 		zerolog.CallerMarshalFunc = func(_ uintptr, file string, line int) string {
 			short := file
 			for i := len(file) - 1; i > 0; i-- {
@@ -105,9 +121,17 @@ func initLogger(debug bool) {
 			file = short
 			return fmt.Sprintf("%s:%d", file, line)
 		}
-		zerolog.SetGlobalLevel(zerolog.TraceLevel)
-		return
+		return zerolog.New(out).
+			Level(zerolog.TraceLevel).
+			With().
+			Timestamp().
+			Caller().
+			Logger()
 	}
 
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	return zerolog.New(out).
+		Level(zerolog.InfoLevel).
+		With().
+		Timestamp().
+		Logger()
 }
