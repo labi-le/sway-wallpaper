@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/labi-le/chiasma/internal/fs"
 	"github.com/labi-le/chiasma/internal/output"
@@ -53,7 +54,9 @@ func (s *WallpaperService) Update(ctx context.Context, params UpdateParams) erro
 	}
 	defer img.Close()
 
-	path, err := fs.SaveFile(img, params.SaveDir)
+	tags := strings.Fields(phrase)
+
+	path, err := fs.SaveFile(img, params.SaveDir, tags)
 	if err != nil {
 		return fmt.Errorf("failed to save image: %w", err)
 	}
