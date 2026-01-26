@@ -9,7 +9,7 @@ import (
 	_ "image/png"
 	"io"
 
-	"github.com/labi-le/sway-wallpaper/pkg/output"
+	"github.com/labi-le/chiasma/pkg/output"
 	"github.com/rs/zerolog"
 )
 

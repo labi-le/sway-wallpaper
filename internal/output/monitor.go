@@ -2,8 +2,9 @@ package output
 
 import (
 	"errors"
-	"github.com/vcraescu/go-xrandr"
 	"os/exec"
+
+	"github.com/vcraescu/go-xrandr"
 )
 
 var (

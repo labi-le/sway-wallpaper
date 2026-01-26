@@ -1,115 +1,112 @@
-# sway-wallpaper
+# chiasma
 
-Sway Wallpaper - a project that dynamically manages the wallpaper on the Sway desktop. It can use browser history to search for images, and it can also use a search phrase to search for images on the web. Several wallpaper managers are supported, as well as several image search APIs
-## Working mode
-- Browser history search mode
-- Search by phrase mode (`search-phrase` option)
+dynamically manages wallpapers based on browser history or search phrases
 
-## Dependencies
+## features
 
-- Wayland
-- Chromium\Firefox-based browser - parsing history file, non required if use `search-phrase` option
-- Utilities for setting wallpaper -`swaybg`
-- `xrandr` - for resolution detection, non required if you specify resolution manually
-- Internet connection - for find and downloading images
-- Go - for building, non required if you use prebuilt binaries
+- **source**:
+  - **browser history**: extracts last search query (chromium-based/firefox).
+  - **manual phrase**: static keyword search.
+- **api**:
+  - **unsplash**
+  - **nasa**
+- **backends**:
+  - `swww`
+  - `swaybg`
+- **output**:
+  - auto-detection via `xrandr`.
+  - multi-monitor support.
+- **modes**:
+  - one-shot.
+  - daemon (`--follow`).
 
-## Compile from source
+## dependencies
 
-```sh
-make install
+- **wayland**
+- **backend** (one of):
+  - `swww`
+  - `swaybg`
+- **resolution**:
+  - `xrandr` (optional, for auto-detection).
+- **browser** (optional):
+  - chromium-based (chrome, brave, vivaldi, opera, etc.)
+  - firefox
+
+## installation
+
+- [Prebuilt binaries](https://github.com/labi-le/chiasma/releases)
+
+## usage
+
+```bash
+chiasma [flags]
 ```
 
-## Prebuilt binaries
-https://github.com/labi-le/sway-wallpaper/releases
+### flags
 
-## Usage
-
-```
-sway-wallpaper
-```
-
-## Examples of usage
-
-```
-Usage of sway-wallpaper:
-  -browser string
-        browser to use. Available: [vivaldi chrome chromium brave opera firefox] (default "vivaldi")
-  -follow string
-        follow a time interval and update wallpaper. e.g. 1h, 1m, 30s
-  -history-file string
-        browser history file to use. Auto detect if empty (only for chromium based browsers)
-        e.g ~/.mozilla/icecat/gxda4hpz.default-1672760493248/formhistory.sqlite
-  -image-resolution string
-        image resolution. e.g. 1920x1080
-  -save-image-dir string
-        directory to save image to (default "/home/labile/Pictures")
-  -search-phrase string
-        search phrase to use
-  -wp-api string
-        wallpaper api to use. Available: [unsplash] (default "unsplash")
-  -wp-tool string
-        wallpaper tool to use. Available: [swaybg] (default "swaybg")
-  -output string
-        output to operate on. e.g eDP-1 (default "*")
+```shell
+      --api string              image source api (default "nasa")
+      --browser string          browser name (default "google-chrome")
+      --follow                  enable periodic updates
+      --history-file string     path to history file
+      --interval duration       update interval (default 1h0m0s)
+      --output monitor          monitor output (e.g. eDP-1)
+      --phrase string           search phrase
+      --resolution resolution   target resolution (e.g. 1920x1080) (default 0x0)
+      --save-dir string         save directory (default "/home/$USER/Pictures/chiasma")
+      --tool string             wallpaper tool (default "swaybg")
+      --verbose                 enable verbose logs
 ```
 
-Update your wallpaper every hour with wbg manager:
+## examples
 
-```
-sway-wallpaper -wp-tool wbg -follow 1h
-```
-
-Update your wallpaper every 30 minute with swaybg manager:
-
-```
-sway-wallpaper -follow 30m
+**1. one-shot update using last google search from vivaldi:**
+```bash
+chiasma --browser vivaldi --api unsplash
 ```
 
-Use sway-wallpaper as dynamic wallpaper:
-
-```
-sway-wallpaper -follow 1h -search-phrase space
-```
-
-Direct path to browser history file (firefox-based)
-```
-sway-wallpaper -browser firefox -history-file ~/.mozilla/icecat/gxda4hpz.default-1672760493248/formhistory.sqlite
+**2. daemon mode (update every 30 minutes) using specific keyword:**
+```bash
+chiasma --phrase "cyberpunk city" --follow --interval 30m --tool swww
 ```
 
-Direct path to browser history file (chromium-based)
-```
-sway-wallpaper -browser vivaldi -history-file ~/.config/vivaldi/Default/History
-```
-
-Add sway autostart:
-
-```
-exec sway-wallpaper [options]
+**3. specific monitor and resolution with nasa api:**
+```bash
+chiasma --output HDMI-A-1 --resolution 2560x1440 --api nasa
 ```
 
-## TODO (maybe never)
+**4. firefox usage (requires manual history path):**
+```bash
+chiasma --browser firefox --history-file ~/.mozilla/firefox/PROFILE_ID/formhistory.sqlite
+```
 
-- [x] Add swaybg tool
-- [x] Add logger
-- [x] Add wbg tool
-- [x] Unsplash image provider
-- [x] Chromium based browser support
-- [x] Firefox support
-- [x] Resolution auto detection
-- [ ] refactor shitcode
-- [ ] check another providers (Pixabay
-  Flickr
-  Pexels
-  StockSnap
-  Burst
-  Visual Hunt
-  ISO Republic
-  PicJumbo
-  Kaboompics
-  Life of Pix
-  Freestock
-  MMT Stock
-  ShotStash
-  FreeRange
-  )
+**5. chromium-based browser with custom history path:**
+```bash
+chiasma --browser brave --history-file ~/.config/BraveSoftware/Brave-Browser/Default/History
+```
+
+## supported providers
+
+### browsers
+*   **chromium-based**: `google-chrome`, `vivaldi`, `chromium`, `brave`, `opera`.
+*   **firefox**: `firefox`.
+
+### apis
+*   **nasa**
+*   **unsplash**
+
+### tools
+*   **swww**
+*   **swaybg**
+
+## todo
+
+- [x] add swaybg tool
+- [x] add swww tool
+- [x] unsplash image provider
+- [x] nasa image provider
+- [x] chromium based browser support
+- [x] firefox support
+- [x] resolution auto detection
+- [ ] refactor codebase
+- [ ] add more providers

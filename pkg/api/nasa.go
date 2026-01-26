@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/labi-le/sway-wallpaper/pkg/output"
+	"github.com/labi-le/chiasma/pkg/output"
 	"github.com/rs/zerolog"
 )
 

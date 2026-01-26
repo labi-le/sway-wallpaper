@@ -11,10 +11,6 @@ type Tool interface {
 	String() string
 }
 
-type ToolDestructor interface {
-	Close() error
-}
-
 type Stringer interface {
 	String() string
 }

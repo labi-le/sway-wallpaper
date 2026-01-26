@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/labi-le/sway-wallpaper/pkg/api"
-	"github.com/labi-le/sway-wallpaper/pkg/fs"
-	"github.com/labi-le/sway-wallpaper/pkg/output"
-	"github.com/labi-le/sway-wallpaper/pkg/wallpaper"
+	"github.com/labi-le/chiasma/internal/fs"
+	"github.com/labi-le/chiasma/internal/output"
+	"github.com/labi-le/chiasma/pkg/api"
+	"github.com/labi-le/chiasma/pkg/wallpaper/execute"
 	"github.com/rs/zerolog"
 )
 
@@ -20,7 +20,7 @@ type WallpaperService struct {
 	Log     zerolog.Logger
 	API     api.Searcher
 	History QuerySource
-	Setter  wallpaper.Tool
+	Setter  execute.Provider
 }
 
 type UpdateParams struct {

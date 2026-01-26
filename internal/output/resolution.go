@@ -43,15 +43,3 @@ func NewWithString(s string) (Resolution, error) {
 	}
 	return r, nil
 }
-
-func MustStringResolution(s string) Resolution {
-	r, err := NewWithString(s)
-	if err != nil {
-		panic(err)
-	}
-	return r
-}
-
-func NewResolution(w, h int) Resolution {
-	return Resolution{w, h}
-}

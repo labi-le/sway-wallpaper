@@ -1,11 +1,10 @@
-module github.com/labi-le/sway-wallpaper
+module github.com/labi-le/chiasma
 
 go 1.25
 
 require (
 	github.com/gabriel-vasile/mimetype v1.4.12
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/nightlyone/lockfile v1.0.0
 	github.com/rs/zerolog v1.34.0
 	github.com/vcraescu/go-xrandr v0.0.0-20250120044713-67143ce1bea9
 	modernc.org/sqlite v1.44.2

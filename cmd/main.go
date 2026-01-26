@@ -8,12 +8,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/labi-le/sway-wallpaper/internal/config"
-	"github.com/labi-le/sway-wallpaper/internal/service"
-	"github.com/labi-le/sway-wallpaper/pkg/api"
-	"github.com/labi-le/sway-wallpaper/pkg/browser"
-	"github.com/labi-le/sway-wallpaper/pkg/output"
-	"github.com/labi-le/sway-wallpaper/pkg/wallpaper"
+	"github.com/labi-le/chiasma/internal/config"
+	"github.com/labi-le/chiasma/internal/output"
+	"github.com/labi-le/chiasma/internal/service"
+	"github.com/labi-le/chiasma/pkg/api"
+	"github.com/labi-le/chiasma/pkg/browser"
+	"github.com/labi-le/chiasma/pkg/wallpaper"
 	"github.com/rs/zerolog"
 )
 
@@ -45,7 +45,7 @@ func main() {
 		}
 	}
 
-	tool, err := wallpaper.ByName(cfg.ToolName)
+	tool, err := wallpaper.ByNameOrAvailable(cfg.ToolName)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to init wallpaper tool")
 	}

@@ -9,7 +9,7 @@ pkgs.mkShell {
   ];
 
   shellHook = ''
-    echo "Welcome to the Go development environment for sway-wallpaper"
+    echo "Welcome to the Go development environment for chiasma"
     go version
   '';
 }
