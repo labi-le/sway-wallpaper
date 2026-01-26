@@ -16,19 +16,19 @@ var (
 	unsafeChars         = regexp.MustCompile(`[^a-zA-Z0-9а-яА-Я]+`)
 )
 
-func SaveFile(data io.Reader, dir string, tags []string) (string, error) {
+func SaveFile(data io.Reader, dir string, tags []string) (string, bool, error) {
 	img, err := io.ReadAll(data)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	ext := mimetype.Detect(img).Extension()
 	if ext == "" {
-		return "", ErrUnknownExtension
+		return "", false, ErrUnknownExtension
 	}
 
 	if ioErr := os.MkdirAll(dir, 0755); ioErr != nil {
-		return "", ioErr
+		return "", false, ioErr
 	}
 
 	sha := sha256.New()
@@ -38,7 +38,11 @@ func SaveFile(data io.Reader, dir string, tags []string) (string, error) {
 	tagSuffix := buildTagSuffix(tags)
 	gen := fmt.Sprintf("%s/sw-%s%s%s", dir, short, tagSuffix, ext)
 
-	return gen, os.WriteFile(gen, img, 0600)
+	if _, err := os.Stat(gen); err == nil {
+		return gen, true, nil
+	}
+
+	return gen, false, os.WriteFile(gen, img, 0600)
 }
 
 func buildTagSuffix(tags []string) string {

@@ -1,4 +1,4 @@
-package api
+package nasa
 
 import (
 	"context"
@@ -10,9 +10,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/labi-le/chiasma/internal/output"
+	"github.com/labi-le/chiasma/pkg/api/searcher"
 	"github.com/rs/zerolog"
 )
+
+const Name = "nasa"
 
 const (
 	nasaSearchURL = "https://images-api.nasa.gov/search?q=%s&media_type=image"
@@ -46,7 +48,7 @@ func (i nasaImage) Size() (int, int) {
 	return i.w, i.h
 }
 
-func (n *Nasa) Search(ctx context.Context, q string, _ output.Resolution) (Image, error) {
+func (n *Nasa) Search(ctx context.Context, q string, _ searcher.Resolution) (searcher.Image, error) {
 	log := n.log.With().Str("op", "Search").Logger()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf(nasaSearchURL, url.QueryEscape(q)), nil)
@@ -136,5 +138,5 @@ func (n *Nasa) Search(ctx context.Context, q string, _ output.Resolution) (Image
 		return nil, fmt.Errorf("failed to download image, status: %d", imgResp.StatusCode)
 	}
 
-	return DetectSize(imgResp.Body)
+	return searcher.DetectSize(imgResp.Body)
 }

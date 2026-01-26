@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/labi-le/chiasma/internal/config"
-	"github.com/labi-le/chiasma/internal/output"
 	"github.com/labi-le/chiasma/internal/service"
-	"github.com/labi-le/chiasma/pkg/api"
+	"github.com/labi-le/chiasma/pkg/api/local"
+	"github.com/labi-le/chiasma/pkg/api/nasa"
+	"github.com/labi-le/chiasma/pkg/api/searcher"
+	"github.com/labi-le/chiasma/pkg/api/unsplash"
 	"github.com/labi-le/chiasma/pkg/browser"
 	"github.com/labi-le/chiasma/pkg/wallpaper"
 	"github.com/rs/zerolog"
@@ -25,7 +27,7 @@ func main() {
 
 	log := initLogger(cfg.Verbose)
 
-	searcher, err := api.NewSearcher(log, cfg.APIName)
+	srchr, err := NewSearcher(log, cfg.APIName, cfg.SaveDir)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to init api")
 	}
@@ -52,7 +54,7 @@ func main() {
 
 	resolution := cfg.Resolution
 	if resolution.Width == 0 || resolution.Height == 0 {
-		mon, err := output.NewByIDXrandr(cfg.OutputMonitor.ID)
+		mon, err := searcher.NewByIDXrandr(cfg.OutputMonitor.ID)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to detect resolution, please specify --image-resolution")
 		}
@@ -62,7 +64,7 @@ func main() {
 
 	svc := &service.WallpaperService{
 		Log:     log,
-		API:     searcher,
+		API:     srchr,
 		History: historyProvider,
 		Setter:  tool,
 	}
@@ -134,4 +136,17 @@ func initLogger(verbose bool) zerolog.Logger {
 		With().
 		Timestamp().
 		Logger()
+}
+
+func NewSearcher(log zerolog.Logger, name string, dir string) (searcher.Searcher, error) {
+	switch name {
+	case unsplash.Name:
+		return unsplash.NewUnsplash(log), nil
+	case nasa.Name:
+		return nasa.NewNasa(log), nil
+	case local.Name:
+		return local.NewLocal(log, dir), nil
+	default:
+		return nil, searcher.ErrUnknownSearcher
+	}
 }

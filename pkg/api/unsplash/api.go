@@ -1,4 +1,4 @@
-package api
+package unsplash
 
 import (
 	"context"
@@ -10,9 +10,11 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/labi-le/chiasma/internal/output"
+	"github.com/labi-le/chiasma/pkg/api/searcher"
 	"github.com/rs/zerolog"
 )
+
+const Name = "unsplash"
 
 var (
 	ErrConnectionTimeOut = errors.New("connection timeout")
@@ -56,7 +58,7 @@ func (i unsplashImage) Size() (int, int) {
 	return i.w, i.h
 }
 
-func (u *Unsplash) Search(ctx context.Context, q string, resolution output.Resolution) (Image, error) {
+func (u *Unsplash) Search(ctx context.Context, q string, resolution searcher.Resolution) (searcher.Image, error) {
 	log := u.log.With().Str("op", "Search").Logger()
 	req, err := http.NewRequestWithContext(
 		ctx,

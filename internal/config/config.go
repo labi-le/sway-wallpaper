@@ -4,8 +4,8 @@ import (
 	"os"
 	"time"
 
-	output2 "github.com/labi-le/chiasma/internal/output"
-	"github.com/labi-le/chiasma/pkg/api"
+	"github.com/labi-le/chiasma/pkg/api/nasa"
+	"github.com/labi-le/chiasma/pkg/api/searcher"
 	"github.com/labi-le/chiasma/pkg/browser"
 	flag "github.com/spf13/pflag"
 )
@@ -13,8 +13,8 @@ import (
 type Config struct {
 	BrowserName    string
 	HistoryPath    string
-	Resolution     output2.Resolution
-	OutputMonitor  output2.Monitor
+	Resolution     searcher.Resolution
+	OutputMonitor  searcher.Monitor
 	ToolName       string
 	APIName        string
 	SaveDir        string
@@ -31,7 +31,7 @@ func Parse() (Config, error) {
 	flag.Var(&c.Resolution, "resolution", "target resolution (e.g. 1920x1080)")
 	flag.Var(&c.OutputMonitor, "output", "monitor output (e.g. eDP-1)")
 	flag.StringVar(&c.ToolName, "tool", "", "wallpaper tool")
-	flag.StringVar(&c.APIName, "api", api.AvailableAPIs()[0], "image source api")
+	flag.StringVar(&c.APIName, "api", nasa.Name, "image source api")
 	flag.StringVar(&c.SaveDir, "save-dir", os.Getenv("HOME")+"/Pictures/chiasma", "save directory")
 	flag.StringVar(&c.SearchPhrase, "phrase", "", "search phrase")
 	flag.DurationVar(&c.FollowDuration, "interval", time.Hour, "update interval")

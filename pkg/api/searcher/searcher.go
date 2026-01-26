@@ -1,4 +1,4 @@
-package api
+package searcher
 
 import (
 	"bytes"
@@ -8,9 +8,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-
-	"github.com/labi-le/chiasma/internal/output"
-	"github.com/rs/zerolog"
 )
 
 var (
@@ -23,7 +20,7 @@ type Image interface {
 }
 
 type Searcher interface {
-	Search(ctx context.Context, q string, resolution output.Resolution) (Image, error)
+	Search(ctx context.Context, q string, resolution Resolution) (Image, error)
 }
 
 type detectedImage struct {
@@ -57,19 +54,4 @@ func DetectSize(img io.Reader) (Image, error) {
 		w:      config.Width,
 		h:      config.Height,
 	}, nil
-}
-
-func AvailableAPIs() []string {
-	return []string{"nasa", "unsplash"}
-}
-
-func NewSearcher(log zerolog.Logger, name string) (Searcher, error) {
-	switch name {
-	case "unsplash":
-		return NewUnsplash(log), nil
-	case "nasa":
-		return NewNasa(log), nil
-	default:
-		return nil, ErrUnknownSearcher
-	}
 }

@@ -1,4 +1,4 @@
-package output
+package searcher
 
 import (
 	"errors"
@@ -33,13 +33,4 @@ func (r *Resolution) Set(s string) error {
 
 func (r *Resolution) Type() string {
 	return "resolution"
-}
-
-func NewWithString(s string) (Resolution, error) {
-	r := Resolution{}
-	_, err := fmt.Sscanf(s, "%dx%d", &r.Width, &r.Height)
-	if err != nil {
-		return r, errors.Join(err, ErrInvalidResolution)
-	}
-	return r, nil
 }

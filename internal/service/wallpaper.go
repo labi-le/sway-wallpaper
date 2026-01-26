@@ -7,8 +7,7 @@ import (
 	"strings"
 
 	"github.com/labi-le/chiasma/internal/fs"
-	"github.com/labi-le/chiasma/internal/output"
-	"github.com/labi-le/chiasma/pkg/api"
+	"github.com/labi-le/chiasma/pkg/api/searcher"
 	"github.com/labi-le/chiasma/pkg/wallpaper/execute"
 	"github.com/rs/zerolog"
 )
@@ -19,14 +18,14 @@ type QuerySource interface {
 
 type WallpaperService struct {
 	Log     zerolog.Logger
-	API     api.Searcher
+	API     searcher.Searcher
 	History QuerySource
 	Setter  execute.Provider
 }
 
 type UpdateParams struct {
 	Phrase     string
-	Resolution output.Resolution
+	Resolution searcher.Resolution
 	SaveDir    string
 	OutputID   string
 	RetryCount int
@@ -56,11 +55,16 @@ func (s *WallpaperService) Update(ctx context.Context, params UpdateParams) erro
 
 	tags := strings.Fields(phrase)
 
-	path, err := fs.SaveFile(img, params.SaveDir, tags)
+	path, skipped, err := fs.SaveFile(img, params.SaveDir, tags)
 	if err != nil {
 		return fmt.Errorf("failed to save image: %w", err)
 	}
-	log.Debug().Str("path", path).Msg("image saved")
+
+	if skipped {
+		log.Debug().Str("path", path).Msg("image reused (cached)")
+	} else {
+		log.Debug().Str("path", path).Msg("image saved")
+	}
 
 	if err := s.Setter.Change(ctx, path, params.OutputID); err != nil {
 		return fmt.Errorf("failed to set wallpaper: %w", err)
@@ -69,7 +73,7 @@ func (s *WallpaperService) Update(ctx context.Context, params UpdateParams) erro
 	return nil
 }
 
-func (s *WallpaperService) fetchImageWithRetry(ctx context.Context, phrase string, res output.Resolution, retries int) (api.Image, error) {
+func (s *WallpaperService) fetchImageWithRetry(ctx context.Context, phrase string, res searcher.Resolution, retries int) (searcher.Image, error) {
 	var lastErr error
 	for i := 0; i < retries; i++ {
 		img, err := s.API.Search(ctx, phrase, res)
