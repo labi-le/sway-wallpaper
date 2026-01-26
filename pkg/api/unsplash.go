@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/labi-le/chiasma/pkg/output"
+	"github.com/labi-le/chiasma/internal/output"
 	"github.com/rs/zerolog"
 )
 

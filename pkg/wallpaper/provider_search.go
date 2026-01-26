@@ -1,31 +1,40 @@
 package wallpaper
 
-import "errors"
+import (
+	"github.com/labi-le/chiasma/pkg/wallpaper/execute"
+	"github.com/labi-le/chiasma/pkg/wallpaper/swaybg"
+	"github.com/labi-le/chiasma/pkg/wallpaper/swww"
+)
 
-var ErrUnknownTool = errors.New("unknown tool")
+func ByNameOrAvailable(tool string) (execute.Provider, error) {
+	if tool == "" {
+		if availableProvider == nil {
+			return nil, execute.ErrUtilityNotFound
+		}
 
-func ByName(tool string) (Tool, error) {
+		return availableProvider, nil
+	}
+
 	switch tool {
-	case "swaybg":
-		return NewSwayBG()
-	case "swww":
-		return NewSWWW()
+	case swaybg.Name:
+		return swaybg.NewSwayBG()
+	case swww.Name:
+		return swww.NewSWWW()
 	default:
-		return nil, ErrUnknownTool
+		return nil, execute.ErrUtilityNotFound
 	}
 }
 
 var (
-	SupportedProvider = map[string]struct{}{"swww": {}, "swaybg": {}}
-	AvailableProvider = getAvailableProvider()
+	availableProvider = getAvailableProvider()
 )
 
-func getAvailableProvider() Tool {
-	if t, err := NewSwayBG(); err == nil {
+func getAvailableProvider() execute.Provider {
+	if t, err := swaybg.NewSwayBG(); err == nil {
 		return t
 	}
 
-	if t, err := NewSWWW(); err == nil {
+	if t, err := swww.NewSWWW(); err == nil {
 		return t
 	}
 
