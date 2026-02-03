@@ -3,7 +3,7 @@ module github.com/labi-le/chiasma
 go 1.25
 
 require (
-	github.com/gabriel-vasile/mimetype v1.4.12
+	github.com/gabriel-vasile/mimetype v1.4.13
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/pflag v1.0.10
 	github.com/vcraescu/go-xrandr v0.0.0-20250120044713-67143ce1bea9
